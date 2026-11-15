@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080d18">
+<title>GTXMOD PS4 | متجر المودات</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="top">
+    <button id="menuBtn">☰</button>
+    <h2>GTXMOD <span>PS4</span></h2>
+    <button id="filterBtn">⚙</button>
+  </div>
+  <nav id="nav">
+    <a href="#">الرئيسية</a>
+    <a href="#mods">المودات</a>
+    <a href="#about">حول الموقع</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <p class="tag">عالم مودات PS4</p>
+  <h1>اكتشف عالم <span>GTXMOD</span></h1>
+  <p>أفضل مودات GTA V لجهاز PlayStation 4</p>
+  <a href="#mods" class="mainBtn">استكشف المودات</a>
+</section>
+
+<main id="mods">
+  <h2 class="sectionTitle">تصنيفات المودات</h2>
+  <div class="categories">
+    <button class="active" data-category="all">الكل</button>
+    <button data-category="cars">السيارات</button>
+    <button data-category="characters">الشخصيات</button>
+    <button data-category="maps">المابات</button>
+    <button data-category="scripts">السكربتات</button>
+  </div>
+
+  <input id="search" type="search" placeholder="ابحث عن مود...">
+  <h2 class="sectionTitle">أحدث المودات</h2>
+  <div id="modList" class="modGrid">
+    <p>جاري تحميل المودات...</p>
+  </div>
+</main>
+
+<footer id="about">
+  <h2>GTXMOD <span>PS4</span></h2>
+  <p>منصتك لمودات وأدوات ألعاب PlayStation 4</p>
+  <small>© 2026 GTXMOD PS4</small>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
