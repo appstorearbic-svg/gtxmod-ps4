@@ -60,15 +60,7 @@ function render() {
           <span>⇩ ${esc(m.size || '')}</span>
         </div>
 
-        ${m.video ? `
-          <video class="mod-video"
-                 controls
-                 playsinline
-                 preload="metadata"
-                 poster="${safeUrl(m.image)}">
-            <source src="${safeUrl(m.video)}">
-          </video>
-        ` : ''}
+        
 
         <a class="download"
            href="${safeUrl(m.download)}"
@@ -691,8 +683,22 @@ render = function() {
     const likes = Number(gtxLikes[m.id]) || 0;
     return `
     <article class="mod-card">
-      <div class="mod-image">
-        <img src="${safeUrl(m.image)}" alt="${esc(m.name)}" loading="lazy">
+      <div class="mod-image gtx-media" data-media="0"
+           style="position:relative;overflow:hidden;touch-action:pan-y">
+        <img class="gtx-media-image" src="${safeUrl(m.image)}"
+             alt="${esc(m.name)}" loading="lazy"
+             style="width:100%;height:100%;object-fit:cover;display:block">
+        ${m.video ? `
+          <video class="gtx-media-video" controls playsinline
+                 preload="none" poster="${safeUrl(m.image)}"
+                 style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:2">
+            <source src="${safeUrl(m.video)}" type="video/mp4">
+          </video>
+          <span class="gtx-media-count"
+                style="position:absolute;top:10px;left:10px;background:#050505;color:white;padding:5px 10px;border-radius:7px;font-size:12px;z-index:3">1/2</span>
+          <span class="gtx-media-hint"
+                style="position:absolute;bottom:10px;right:10px;background:#050505c9;color:white;padding:5px 9px;border-radius:7px;font-size:11px;pointer-events:none">اسحب لمشاهدة الفيديو ⇆</span>
+        ` : ""}
         <span class="file-badge">${esc(m.fileType || "MOD")}</span>
       </div>
       <div class="mod-content">
@@ -704,7 +710,7 @@ render = function() {
           <span>▣ ${esc(m.fileType || "ZIP")}</span>
           <span>⇩ ${esc(m.size || "")}</span>
         </div>
-        ${m.video ? `<video class="mod-video" controls playsinline preload="metadata" poster="${safeUrl(m.image)}"><source src="${safeUrl(m.video)}"></video>` : ""}
+
         <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:12px">
           <button class="gtx-like" data-id="${esc(m.id)}" style="padding:9px 13px;border:0;border-radius:8px;background:${liked ? "#a51d48" : "#243c59"};color:white">
             ${liked ? "❤️" : "🤍"} ${likes}
@@ -753,3 +759,49 @@ if (publishCategory) {
     `<option value="${c}">${c}</option>`
   ).join("");
 }
+
+
+/* GTXMOD image/video swipe viewer */
+(function(){
+  let startX = 0;
+  let startY = 0;
+
+  grid.addEventListener("touchstart", e => {
+    const media = e.target.closest(".gtx-media");
+    if (!media || !media.querySelector(".gtx-media-video")) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, {passive:true});
+
+  grid.addEventListener("touchend", e => {
+    const media = e.target.closest(".gtx-media");
+    if (!media || !media.querySelector(".gtx-media-video")) return;
+
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;
+
+    const img = media.querySelector(".gtx-media-image");
+    const video = media.querySelector(".gtx-media-video");
+    const badge = media.querySelector(".gtx-media-count");
+    const hint = media.querySelector(".gtx-media-hint");
+
+    if (media.dataset.media === "0") {
+      media.dataset.media = "1";
+      img.style.display = "none";
+      video.style.display = "block";
+      badge.textContent = "2/2";
+      hint.textContent = "اسحب للرجوع للصورة ⇆";
+      video.load();
+    } else {
+      video.pause();
+      video.currentTime = 0;
+      video.style.display = "none";
+      img.style.display = "block";
+      media.dataset.media = "0";
+      badge.textContent = "1/2";
+      hint.textContent = "اسحب لمشاهدة الفيديو ⇆";
+    }
+  }, {passive:true});
+})();
