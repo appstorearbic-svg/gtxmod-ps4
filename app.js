@@ -183,3 +183,94 @@ document.getElementById('adminLoginBtn').onclick = async () => {
   }
 };
 
+
+// GTXMOD ADMIN PUBLISH PANEL
+let adminCredentials = null;
+
+const adminPanel = document.createElement("div");
+adminPanel.id = "adminPanel";
+adminPanel.style.cssText = "display:none;position:fixed;inset:0;z-index:10001;background:#000e;overflow:auto;padding:18px;box-sizing:border-box";
+adminPanel.innerHTML = `
+<div style="max-width:430px;margin:25px auto;background:#101d32;color:white;padding:22px;border-radius:16px">
+<h2>لوحة المدير - GTXMOD</h2>
+<form id="publishForm">
+<label>اسم المود</label>
+<input name="name" required placeholder="اسم المود" style="width:100%;padding:12px;box-sizing:border-box;margin:7px 0">
+<label>التصنيف</label>
+<select name="category" required style="width:100%;padding:12px;margin:7px 0">
+<option value="سيارات">سيارات</option>
+<option value="شخصيات">شخصيات</option>
+<option value="مابات">مابات</option>
+<option value="سكربتات">سكربتات</option>
+</select>
+<label>تفاصيل المود</label>
+<textarea name="description" placeholder="اكتب تفاصيل المود" style="width:100%;padding:12px;box-sizing:border-box;margin:7px 0"></textarea>
+<label>صورة الغلاف</label>
+<input name="image" type="file" accept="image/*" required style="width:100%;margin:10px 0">
+<label>ملف ZIP</label>
+<input name="zip" type="file" accept=".zip" required style="width:100%;margin:10px 0">
+<label>فيديو اختياري</label>
+<input name="video" type="file" accept="video/*" style="width:100%;margin:10px 0">
+<button type="submit" style="width:100%;padding:14px;background:#087bd0;color:white;border:0;border-radius:9px;margin-top:15px">🚀 نشر المود</button>
+</form>
+<p id="publishMessage"></p>
+<button id="adminPanelClose" style="width:100%;padding:12px">إغلاق</button>
+</div>`;
+document.body.appendChild(adminPanel);
+
+document.getElementById("adminPanelClose").onclick = () => {
+  adminPanel.style.display = "none";
+};
+
+document.getElementById("adminLoginBtn").onclick = async () => {
+  const msg = document.getElementById("adminMessage");
+  const username = document.getElementById("adminUser").value;
+  const password = document.getElementById("adminPass").value;
+  msg.textContent = "جاري التحقق...";
+  try {
+    const response = await fetch("/api/login", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username,password})
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      msg.textContent = result.message || "بيانات الدخول غير صحيحة";
+      return;
+    }
+    adminCredentials = {username,password};
+    loginBox.style.display = "none";
+    adminPanel.style.display = "block";
+    msg.textContent = "";
+  } catch(e) {
+    msg.textContent = "تعذر الاتصال بالخادم";
+  }
+};
+
+document.getElementById("publishForm").onsubmit = async e => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const msg = document.getElementById("publishMessage");
+  if (!adminCredentials) {
+    msg.textContent = "سجل دخول المدير من جديد";
+    return;
+  }
+  const data = new FormData(form);
+  data.append("username", adminCredentials.username);
+  data.append("password", adminCredentials.password);
+  msg.textContent = "جاري رفع الملفات والنشر...";
+  try {
+    const response = await fetch("/api/publish", {
+      method:"POST",
+      body:data
+    });
+    const result = await response.json();
+    msg.textContent = result.message || "انتهت العملية";
+    if (response.ok && result.success) {
+      form.reset();
+      setTimeout(() => location.reload(), 2500);
+    }
+  } catch(err) {
+    msg.textContent = "فشل الاتصال: " + err.message;
+  }
+};
