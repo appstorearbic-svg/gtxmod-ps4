@@ -1,67 +1,122 @@
+const grid = document.getElementById('modGrid');
+const empty = document.getElementById('emptyState');
+const count = document.getElementById('resultCount');
+
 let mods = [];
-let selectedCategory = "all";
+let selected = 'سيارات';
 
-const list = document.getElementById("modList");
-const search = document.getElementById("search");
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;',
+  '"':'&quot;', "'":'&#39;'
+}[c]));
 
-document.getElementById("menuBtn").onclick = () =>
-  document.getElementById("nav").classList.toggle("show");
+const safeUrl = s => {
+  const v = String(s || '');
+  return /^(https?:\/\/|assets\/|\.\/)/i.test(v) ? esc(v) : '#';
+};
 
-document.getElementById("filterBtn").onclick = () =>
-  document.querySelector(".categories").scrollIntoView({behavior:"smooth"});
+function render() {
+  const shown = mods.filter(m =>
+    !selected || m.category === selected
+  );
 
-document.querySelectorAll(".categories button").forEach(button => {
-  button.onclick = () => {
-    document.querySelectorAll(".categories button").forEach(b => b.classList.remove("active"));
-    button.classList.add("active");
-    selectedCategory = button.dataset.category;
-    renderMods();
+  count.textContent = shown.length + ' مود';
+  empty.classList.toggle('hidden', shown.length > 0);
+
+  grid.innerHTML = shown.map(m => `
+    <article class="mod-card">
+
+      <div class="mod-image">
+        <img src="${safeUrl(m.image)}"
+             alt="${esc(m.name)}"
+             loading="lazy">
+        <span class="file-badge">
+          ${esc(m.fileType || 'MOD')}
+        </span>
+      </div>
+
+      <div class="mod-content">
+
+        <h3 class="mod-title">
+          ${esc(m.name)}
+        </h3>
+
+        <div style="
+          display:inline-block;
+          color:#60a5fa;
+          font-weight:bold;
+          margin:5px 0 10px;
+          direction:rtl;">
+          #${esc(m.category || 'غير مصنف')}
+        </div>
+
+        <p class="mod-desc">
+          ${esc(m.description || 'مود GTA V لجهاز PS4')}
+        </p>
+
+        <div class="meta">
+          <span>🎮 GTA V (PS4)</span>
+          <span>▣ ${esc(m.fileType || 'ZIP')}</span>
+          <span>⇩ ${esc(m.size || '')}</span>
+        </div>
+
+        ${m.video ? `
+          <video class="mod-video"
+                 controls
+                 playsinline
+                 preload="metadata"
+                 poster="${safeUrl(m.image)}">
+            <source src="${safeUrl(m.video)}">
+          </video>
+        ` : ''}
+
+        <a class="download"
+           href="${safeUrl(m.download)}"
+           download>
+          ⬇ تحميل المود
+        </a>
+
+      </div>
+    </article>
+  `).join('');
+}
+
+fetch('./mods.json')
+  .then(r => {
+    if (!r.ok) throw new Error('mods.json not found');
+    return r.json();
+  })
+  .then(data => {
+    mods = Array.isArray(data) ? data : [];
+    render();
+  })
+  .catch(err => {
+    console.error(err);
+    mods = [];
+    render();
+  });
+
+document.querySelectorAll('.category').forEach(btn => {
+  btn.onclick = () => {
+    selected = btn.dataset.category;
+
+    document.querySelectorAll('.category').forEach(x =>
+      x.classList.toggle('active', x === btn)
+    );
+
+    render();
   };
 });
 
-search.addEventListener("input", renderMods);
+document.getElementById('filterBtn').onclick = () => {
+  selected = '';
 
-async function loadMods() {
-  try {
-    const response = await fetch("mods.json");
-    if (!response.ok) throw new Error("تعذر تحميل البيانات");
-    mods = await response.json();
-    renderMods();
-  } catch (error) {
-    list.innerHTML = '<p class="empty">تعذر تحميل المودات حالياً.</p>';
-  }
-}
+  document.querySelectorAll('.category').forEach(x =>
+    x.classList.remove('active')
+  );
 
-function renderMods() {
-  const term = search.value.trim().toLowerCase();
-  const filtered = mods.filter(mod => {
-    const categoryMatch = selectedCategory === "all" || mod.category === selectedCategory;
-    const text = `${mod.title || ""} ${mod.description || ""}`.toLowerCase();
-    return categoryMatch && text.includes(term);
-  });
+  render();
+};
 
-  if (!filtered.length) {
-    list.innerHTML = '<p class="empty">لا توجد مودات حالياً في هذا التصنيف.</p>';
-    return;
-  }
-
-  list.innerHTML = filtered.map(mod => `
-    <article class="modCard">
-      <img src="${safe(mod.image)}" alt="">
-      <div class="modInfo">
-        <small class="modType">${safe(mod.type || "مود PS4")}</small>
-        <h3>${safe(mod.title)}</h3>
-        <p>${safe(mod.description)}</p>
-        <a class="download" href="${safe(mod.download)}" target="_blank" rel="noopener">تحميل المود</a>
-      </div>
-    </article>
-  `).join("");
-}
-
-function safe(value) {
-  return String(value || "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[char]);
-}
-
-loadMods();
+document.getElementById('menuBtn').onclick = () =>
+  alert('GTXMOD PS4');
