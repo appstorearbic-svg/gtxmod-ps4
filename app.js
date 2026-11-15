@@ -118,5 +118,68 @@ document.getElementById('filterBtn').onclick = () => {
   render();
 };
 
-document.getElementById('menuBtn').onclick = () =>
-  alert('GTXMOD PS4');
+
+const menuPanel = document.createElement('div');
+menuPanel.id = 'gtxMenu';
+menuPanel.style.cssText = 'display:none;position:fixed;top:65px;right:12px;z-index:9999;background:#101d32;border:1px solid #2874bd;border-radius:14px;padding:15px;min-width:190px;box-shadow:0 10px 35px #000a;color:white';
+
+menuPanel.innerHTML = `
+  <h3 style="margin:5px 0 15px">GTXMOD PS4</h3>
+  <button id="adminOpen" style="width:100%;padding:13px;background:#1769aa;color:white;border:0;border-radius:9px;font-size:16px">👤 المدير</button>
+`;
+
+document.body.appendChild(menuPanel);
+
+const loginBox = document.createElement('div');
+loginBox.id = 'adminLogin';
+loginBox.style.cssText = 'display:none;position:fixed;inset:0;background:#000c;z-index:10000;align-items:center;justify-content:center;padding:20px';
+
+loginBox.innerHTML = `
+<div style="background:#101d32;color:white;padding:24px;border-radius:16px;width:100%;max-width:350px">
+<h2>دخول المدير</h2>
+<input id="adminUser" placeholder="اسم المستخدم" style="width:100%;padding:13px;margin:8px 0;box-sizing:border-box">
+<input id="adminPass" type="password" placeholder="كلمة المرور" style="width:100%;padding:13px;margin:8px 0;box-sizing:border-box">
+<button id="adminLoginBtn" style="width:100%;padding:13px;background:#1676c5;color:white;border:0;border-radius:8px">تسجيل الدخول</button>
+<button id="adminClose" style="width:100%;padding:10px;margin-top:8px">إغلاق</button>
+<p id="adminMessage"></p>
+</div>`;
+
+document.body.appendChild(loginBox);
+
+document.getElementById('menuBtn').onclick = () => {
+  menuPanel.style.display =
+    menuPanel.style.display === 'none' ? 'block' : 'none';
+};
+
+document.getElementById('adminOpen').onclick = () => {
+  menuPanel.style.display = 'none';
+  loginBox.style.display = 'flex';
+};
+
+document.getElementById('adminClose').onclick = () => {
+  loginBox.style.display = 'none';
+};
+
+document.getElementById('adminLoginBtn').onclick = async () => {
+  const msg = document.getElementById('adminMessage');
+  msg.textContent = 'جاري التحقق...';
+
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('adminUser').value,
+        password: document.getElementById('adminPass').value
+      })
+    });
+
+    const result = await response.json();
+    msg.textContent = result.success
+      ? 'تم تسجيل الدخول بنجاح'
+      : (result.message || 'فشل تسجيل الدخول');
+  } catch {
+    msg.textContent = 'تعذر الاتصال بالخادم';
+  }
+};
+
