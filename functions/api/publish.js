@@ -1,6 +1,6 @@
 const REPO = "appstorearbic-svg/gtxmod-ps4";
 const BRANCH = "main";
-const CATEGORIES = ["سيارات", "شخصيات", "مابات", "سكربتات"];
+const CATEGORIES = ["سيارات", "طيارات", "موطورات", "قوارب", "شخصيات", "مابات", "سكربتات"];
 
 export async function onRequestPost({request, env}) {
   try {

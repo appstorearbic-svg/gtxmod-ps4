@@ -529,3 +529,227 @@ function moveTelegramCredit() {
 }
 moveTelegramCredit();
 setInterval(moveTelegramCredit,60000);
+
+// ===== CATEGORIES, FILTERS, LIKES & FAVORITES =====
+const GTX_LIKES_KEY = "gtxmod_likes_v1";
+const GTX_FAV_KEY = "gtxmod_favorites_v1";
+
+function readStore(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "{}"); }
+  catch { return {}; }
+}
+let gtxLikes = readStore(GTX_LIKES_KEY);
+let gtxFavorites = readStore(GTX_FAV_KEY);
+let gtxFavoritesOnly = false;
+let gtxSort = "high";
+let gtxType = "";
+let gtxMinSize = 0;
+let gtxMaxSize = Infinity;
+
+function saveGTXStore() {
+  localStorage.setItem(GTX_LIKES_KEY,JSON.stringify(gtxLikes));
+  localStorage.setItem(GTX_FAV_KEY,JSON.stringify(gtxFavorites));
+}
+function modSizeMB(m) {
+  const match = String(m.size || "").match(/[\d.]+/);
+  return match ? Number(match[0]) : 0;
+}
+
+// التصنيفات قابلة للسحب أفقياً
+const categoryNav = document.getElementById("categoryNav");
+categoryNav.style.cssText += ";overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;white-space:nowrap;scrollbar-width:none;touch-action:pan-x;cursor:grab";
+categoryNav.querySelectorAll(".category").forEach(b => {
+  b.style.flex = "0 0 auto";
+});
+let navDown = false, navStart = 0, navScroll = 0;
+categoryNav.addEventListener("pointerdown",e => {
+  navDown = true;
+  navStart = e.clientX;
+  navScroll = categoryNav.scrollLeft;
+  categoryNav.style.cursor = "grabbing";
+});
+categoryNav.addEventListener("pointermove",e => {
+  if (!navDown) return;
+  categoryNav.scrollLeft = navScroll - (e.clientX-navStart);
+});
+["pointerup","pointercancel","pointerleave"].forEach(ev =>
+  categoryNav.addEventListener(ev,() => {
+    navDown = false;
+    categoryNav.style.cursor = "grab";
+  })
+);
+
+// لوحة التصفية
+const filterPanel = document.createElement("div");
+filterPanel.id = "gtxFilters";
+filterPanel.style.cssText = "display:none;position:fixed;inset:0;z-index:10002;background:#000c;overflow:auto;padding:18px;box-sizing:border-box";
+filterPanel.innerHTML = `
+<div style="max-width:420px;margin:35px auto;background:#101d32;color:white;padding:20px;border:1px solid #1760a0;border-radius:15px">
+<h2>⚑ تصفية المنشورات</h2>
+<label>اللعبة</label>
+<select id="filterGame" style="width:100%;padding:12px;margin:8px 0">
+<option value="GTAV">GTA V</option>
+</select>
+<label>المود</label>
+<select id="filterType" style="width:100%;padding:12px;margin:8px 0">
+<option value="">الكل</option>
+<option>سيارات</option><option>طيارات</option><option>موطورات</option>
+<option>قوارب</option><option>شخصيات</option><option>مابات</option><option>سكربتات</option>
+</select>
+<label>حجم الملف</label>
+<select id="filterSize" style="width:100%;padding:12px;margin:8px 0">
+<option value="all">كل الأحجام</option>
+<option value="1-10">1-10 MB</option>
+<option value="10-30">10-30 MB</option>
+<option value="30-60">30-60 MB</option>
+<option value="60-1000">60-1000 MB</option>
+</select>
+<label>ترتيب التفاعل</label>
+<select id="filterSort" style="width:100%;padding:12px;margin:8px 0">
+<option value="high">الأكثر تفاعلاً ← الأقل تفاعلاً</option>
+<option value="low">الأقل تفاعلاً ← الأكثر تفاعلاً</option>
+</select>
+<button id="applyFilters" style="width:100%;padding:13px;background:#087bd0;color:white;border:0;border-radius:9px;margin-top:12px">تطبيق التصفية</button>
+<button id="closeFilters" style="width:100%;padding:12px;margin-top:8px">إغلاق</button>
+</div>`;
+document.body.appendChild(filterPanel);
+
+document.getElementById("filterBtn").onclick = () => {
+  filterPanel.style.display = "block";
+};
+document.getElementById("closeFilters").onclick = () => {
+  filterPanel.style.display = "none";
+};
+document.getElementById("applyFilters").onclick = () => {
+  gtxType = document.getElementById("filterType").value;
+  gtxSort = document.getElementById("filterSort").value;
+  const range = document.getElementById("filterSize").value;
+  if (range === "all") {
+    gtxMinSize = 0; gtxMaxSize = Infinity;
+  } else {
+    [gtxMinSize,gtxMaxSize] = range.split("-").map(Number);
+  }
+  selected = gtxType;
+  categoryNav.querySelectorAll(".category").forEach(b =>
+    b.classList.toggle("active",b.dataset.category === selected)
+  );
+  filterPanel.style.display = "none";
+  render();
+};
+
+// المفضلات داخل قائمة ☰
+const favoritesButton = document.createElement("button");
+favoritesButton.textContent = "❤️ المفضلات";
+favoritesButton.style.cssText = "width:100%;padding:13px;margin-top:9px;background:#8e2450;color:white;border:0;border-radius:9px;font-size:16px";
+menuPanel.appendChild(favoritesButton);
+favoritesButton.onclick = () => {
+  gtxFavoritesOnly = true;
+  menuPanel.style.display = "none";
+  selected = "";
+  categoryNav.querySelectorAll(".category").forEach(b =>
+    b.classList.toggle("active",b.dataset.category === "")
+  );
+  render();
+  document.querySelector(".section-heading h2").textContent = "❤️ منشوراتي المفضلة";
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+// زر العودة من المفضلات
+const allBack = document.createElement("button");
+allBack.textContent = "عرض كل المنشورات";
+allBack.style.cssText = "display:none;margin:10px 0;padding:10px 15px;background:#1769aa;color:white;border:0;border-radius:8px";
+document.querySelector(".section-heading").after(allBack);
+allBack.onclick = () => {
+  gtxFavoritesOnly = false;
+  document.querySelector(".section-heading h2").textContent = "🔥 أحدث المنشورات";
+  allBack.style.display = "none";
+  render();
+};
+
+// إعادة بناء عرض المنشورات مع القلوب والتصفية
+render = function() {
+  let shown = mods.filter(m => {
+    if (selected && m.category !== selected) return false;
+    if (gtxType && m.category !== gtxType) return false;
+    if (gtxFavoritesOnly && !gtxFavorites[m.id]) return false;
+    const size = modSizeMB(m);
+    if (size && (size < gtxMinSize || size > gtxMaxSize)) return false;
+    return true;
+  });
+
+  shown.sort((a,b) => {
+    const diff = (Number(gtxLikes[b.id]) || 0) - (Number(gtxLikes[a.id]) || 0);
+    return gtxSort === "high" ? diff : -diff;
+  });
+
+  count.textContent = shown.length + " مود";
+  empty.classList.toggle("hidden",shown.length > 0);
+  allBack.style.display = gtxFavoritesOnly ? "inline-block" : "none";
+
+  grid.innerHTML = shown.map(m => {
+    const liked = !!gtxLikes["liked_" + m.id];
+    const likes = Number(gtxLikes[m.id]) || 0;
+    return `
+    <article class="mod-card">
+      <div class="mod-image">
+        <img src="${safeUrl(m.image)}" alt="${esc(m.name)}" loading="lazy">
+        <span class="file-badge">${esc(m.fileType || "MOD")}</span>
+      </div>
+      <div class="mod-content">
+        <h3 class="mod-title">${esc(m.name)}</h3>
+        <div style="color:#60a5fa;font-weight:bold;margin:5px 0 10px">#${esc(m.category || "غير مصنف")}</div>
+        <p class="mod-desc">${esc(m.description || "مود GTA V لجهاز PS4")}</p>
+        <div class="meta">
+          <span>🎮 GTA V (PS4)</span>
+          <span>▣ ${esc(m.fileType || "ZIP")}</span>
+          <span>⇩ ${esc(m.size || "")}</span>
+        </div>
+        ${m.video ? `<video class="mod-video" controls playsinline preload="metadata" poster="${safeUrl(m.image)}"><source src="${safeUrl(m.video)}"></video>` : ""}
+        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:12px">
+          <button class="gtx-like" data-id="${esc(m.id)}" style="padding:9px 13px;border:0;border-radius:8px;background:${liked ? "#a51d48" : "#243c59"};color:white">
+            ${liked ? "❤️" : "🤍"} ${likes}
+          </button>
+          <button class="gtx-fav" data-id="${esc(m.id)}" style="padding:9px 13px;border:0;border-radius:8px;background:#243c59;color:white">
+            ${gtxFavorites[m.id] ? "⭐ محفوظ بالمفضلات" : "☆ أضف للمفضلات"}
+          </button>
+          <a class="download" href="${safeUrl(m.download)}" download>⬇ تحميل المود</a>
+        </div>
+      </div>
+    </article>`;
+  }).join("");
+};
+
+// النقر على القلب والمفضلات
+grid.addEventListener("click",e => {
+  const like = e.target.closest(".gtx-like");
+  const fav = e.target.closest(".gtx-fav");
+  if (like) {
+    const id = like.dataset.id;
+    const key = "liked_" + id;
+    if (gtxLikes[key]) {
+      delete gtxLikes[key];
+      gtxLikes[id] = Math.max(0,(Number(gtxLikes[id]) || 0)-1);
+    } else {
+      gtxLikes[key] = true;
+      gtxLikes[id] = (Number(gtxLikes[id]) || 0)+1;
+    }
+    saveGTXStore();
+    render();
+  }
+  if (fav) {
+    const id = fav.dataset.id;
+    if (gtxFavorites[id]) delete gtxFavorites[id];
+    else gtxFavorites[id] = true;
+    saveGTXStore();
+    render();
+  }
+});
+
+// تحديث خيارات التصنيف في لوحة النشر والإدارة
+const categoryOptions = ["سيارات","طيارات","موطورات","قوارب","شخصيات","مابات","سكربتات"];
+const publishCategory = publishForm.querySelector('[name="category"]');
+if (publishCategory) {
+  publishCategory.innerHTML = categoryOptions.map(c =>
+    `<option value="${c}">${c}</option>`
+  ).join("");
+}
