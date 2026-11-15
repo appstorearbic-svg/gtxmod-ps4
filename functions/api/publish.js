@@ -35,6 +35,7 @@ export async function onRequestPost({request, env}) {
     const headers = {
       Authorization: "Bearer " + env.GITHUB_TOKEN,
       Accept: "application/vnd.github+json",
+      "User-Agent": "GTXMOD-PS4-Publisher",
       "X-GitHub-Api-Version": "2022-11-28"
     };
 
