@@ -24,3 +24,23 @@
   background:#000;
   z-index:2;
 }
+
+/* GTXMOD channel logo */
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  vertical-align: middle;
+  border-radius: 8px;
+}
+.hero-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-logo {
+  width: clamp(110px, 24vw, 190px);
+  height: clamp(110px, 24vw, 190px);
+  object-fit: contain;
+  border-radius: 18px;
+}
