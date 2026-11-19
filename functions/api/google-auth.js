@@ -29,7 +29,9 @@ async function verifyGoogleToken(token, clientId) {
   const header = JSON.parse(new TextDecoder().decode(decodePart(parts[0])));
   const claims = JSON.parse(new TextDecoder().decode(decodePart(parts[1])));
 
-  if (header.alg !== "RS256" || !header.kid) throw new Error("Invalid algorithm");
+  if (header.alg !== "RS256" || !header.kid) {
+    throw new Error("Invalid algorithm");
+  }
 
   const response = await fetch("https://www.googleapis.com/oauth2/v3/certs", {
     cf: { cacheTtl: 3600, cacheEverything: true }
@@ -59,13 +61,17 @@ async function verifyGoogleToken(token, clientId) {
 
   const now = Math.floor(Date.now() / 1000);
 
-  if (!valid ||
-      claims.aud !== clientId ||
-      !["accounts.google.com", "https://accounts.google.com"].includes(claims.iss) ||
-      !claims.sub ||
-      !claims.exp || claims.exp <= now ||
-      !claims.iat || claims.iat > now + 60 ||
-      !(claims.email_verified === true || claims.email_verified === "true")) {
+  if (
+    !valid ||
+    claims.aud !== clientId ||
+    !["accounts.google.com", "https://accounts.google.com"].includes(claims.iss) ||
+    !claims.sub ||
+    !claims.exp ||
+    claims.exp <= now ||
+    !claims.iat ||
+    claims.iat > now + 60 ||
+    !(claims.email_verified === true || claims.email_verified === "true")
+  ) {
     throw new Error("Google token verification failed");
   }
 
@@ -74,9 +80,14 @@ async function verifyGoogleToken(token, clientId) {
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!env.GOOGLE_CLIENT_ID || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+    if (
+      !env.GOOGLE_CLIENT_ID ||
+      !env.SESSION_SECRET ||
+      env.SESSION_SECRET.length < 32 ||
+      !env.DB
+    ) {
       return Response.json(
-        { success: false, message: "إعدادات تسجيل Google غير مكتملة." },
+        { success: false, message: "إعدادات تسجيل الدخول أو قاعدة البيانات غير مكتملة." },
         { status: 503 }
       );
     }
@@ -90,23 +101,60 @@ export async function onRequestPost({ request, env }) {
     }
 
     if (!(request.headers.get("Content-Type") || "").includes("application/json")) {
-      return Response.json({ success: false, message: "نوع الطلب غير صالح." }, { status: 415 });
+      return Response.json(
+        { success: false, message: "نوع الطلب غير صالح." },
+        { status: 415 }
+      );
     }
 
     const body = await request.json();
     const credential = body.credential;
 
     if (typeof credential !== "string" || credential.length > 10000) {
-      return Response.json({ success: false, message: "بيانات الدخول غير صالحة." }, { status: 400 });
+      return Response.json(
+        { success: false, message: "بيانات الدخول غير صالحة." },
+        { status: 400 }
+      );
     }
 
-    const claims = await verifyGoogleToken(credential, env.GOOGLE_CLIENT_ID);
+    const claims = await verifyGoogleToken(
+      credential,
+      env.GOOGLE_CLIENT_ID
+    );
+
+    // إنشاء الحساب عند أول تسجيل فقط.
+    // عند تسجيل الدخول مرة أخرى لا نستبدل اسم وصورة GTXMOD المخصصين.
+    await env.DB.prepare(`
+      INSERT INTO users
+        (id, google_sub, email, display_name, avatar_url)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(google_sub) DO UPDATE SET
+        email = excluded.email,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      crypto.randomUUID(),
+      claims.sub,
+      claims.email || "",
+      claims.name || claims.email || "مستخدم GTXMOD",
+      claims.picture || ""
+    ).run();
+
+    const dbUser = await env.DB.prepare(`
+      SELECT id, google_sub, email, display_name, username, avatar_url
+      FROM users
+      WHERE google_sub = ?
+      LIMIT 1
+    `).bind(claims.sub).first();
+
+    if (!dbUser) throw new Error("User record not found");
 
     const user = {
-      sub: claims.sub,
-      email: claims.email,
-      name: claims.name || claims.email,
-      picture: claims.picture || ""
+      id: dbUser.id,
+      sub: dbUser.google_sub,
+      email: dbUser.email,
+      name: dbUser.display_name,
+      username: dbUser.username || "",
+      picture: dbUser.avatar_url || ""
     };
 
     const payload = b64url(
@@ -127,8 +175,8 @@ export async function onRequestPost({ request, env }) {
     });
   } catch (error) {
     return Response.json(
-      { success: false, message: "تعذر التحقق من تسجيل Google." },
-      { status: 401, headers: { "Cache-Control": "no-store" } }
+      { success: false, message: "تعذر التحقق من تسجيل Google أو حفظ الحساب." },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
