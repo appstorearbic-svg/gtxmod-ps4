@@ -125,6 +125,24 @@ menuPanel.innerHTML = `
 
 document.body.appendChild(menuPanel);
 
+// قائمة حساب المستخدم
+const accountPanel = document.createElement("div");
+accountPanel.id = "accountPanel";
+accountPanel.style.cssText = "display:none;position:fixed;top:65px;left:12px;z-index:10001;background:#101d32;border:1px solid #2874bd;border-radius:14px;padding:16px;width:260px;max-width:calc(100vw - 48px);box-shadow:0 10px 35px #000a;color:white;direction:rtl";
+accountPanel.innerHTML = `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:15px">
+    <img id="accountMenuAvatar" alt="الصورة الشخصية" style="width:52px;height:52px;border-radius:50%;object-fit:cover;background:#263d59">
+    <div style="min-width:0">
+      <div id="accountMenuName" style="font-weight:bold;overflow-wrap:anywhere">حسابي</div>
+      <div id="accountMenuUsername" style="color:#8bbce8;font-size:13px;overflow-wrap:anywhere"></div>
+    </div>
+  </div>
+  <button id="accountSettingsOpen" style="width:100%;padding:12px;background:#1769aa;color:white;border:0;border-radius:9px;font-size:15px">⚙️ إعدادات الحساب</button>
+  <button id="accountMenuLogout" style="width:100%;padding:12px;margin-top:8px;background:#263d59;color:white;border:0;border-radius:9px;font-size:15px">🚪 تسجيل الخروج</button>
+`;
+document.body.appendChild(accountPanel);
+
+
 // Google account sign-in (Google Identity Services)
 const googleLoginBox = document.createElement("div");
 googleLoginBox.id = "googleLoginBox";
@@ -147,12 +165,27 @@ let gtxGoogleUser = null;
 
 function paintGoogleAccount(user) {
   gtxGoogleUser = user || null;
-  if (user && user.picture) {
-    accountAvatar.src = user.picture;
-    accountAvatar.hidden = false;
-    accountInitial.hidden = true;
-    accountBtn.title = user.name || user.email || "حسابي";
-    googleLoginOpen.textContent = "👤 " + (user.name || "حسابي");
+
+  if (user) {
+    if (user.picture) {
+      accountAvatar.src = user.picture;
+      accountAvatar.hidden = false;
+      accountInitial.hidden = true;
+      document.getElementById("accountMenuAvatar").src = user.picture;
+    } else {
+      accountAvatar.hidden = true;
+      accountInitial.hidden = false;
+      accountInitial.textContent = "👤";
+      document.getElementById("accountMenuAvatar").removeAttribute("src");
+    }
+
+    const displayName = user.name || user.email || "مستخدم GTXMOD";
+    document.getElementById("accountMenuName").textContent = displayName;
+    document.getElementById("accountMenuUsername").textContent =
+      user.username ? "@" + user.username : "لم يتم تعيين يوزر";
+
+    accountBtn.title = displayName;
+    googleLoginOpen.textContent = "👤 " + displayName;
     googleLogout.style.display = "block";
   } else {
     accountAvatar.hidden = true;
@@ -162,6 +195,7 @@ function paintGoogleAccount(user) {
     accountBtn.title = "تسجيل الدخول";
     googleLoginOpen.textContent = "🔐 تسجيل دخول";
     googleLogout.style.display = "none";
+    accountPanel.style.display = "none";
   }
 }
 
@@ -223,7 +257,27 @@ function showGoogleLogin() {
   }
 }
 googleLoginOpen.onclick = showGoogleLogin;
-accountBtn.onclick = showGoogleLogin;
+accountBtn.onclick = () => {
+  if (gtxGoogleUser) {
+    menuPanel.style.display = "none";
+    accountPanel.style.display =
+      accountPanel.style.display === "block" ? "none" : "block";
+  } else {
+    showGoogleLogin();
+  }
+};
+
+document.getElementById("accountMenuLogout").onclick = () => googleLogout.click();
+
+document.getElementById("accountSettingsOpen").onclick = () => {
+  alert("سنضيف شاشة إعدادات الحساب في الخطوة التالية.");
+};
+
+document.addEventListener("click", event => {
+  if (!accountPanel.contains(event.target) && !accountBtn.contains(event.target)) {
+    accountPanel.style.display = "none";
+  }
+});
 document.getElementById("googleLoginClose").onclick = () => googleLoginBox.style.display = "none";
 googleLogout.onclick = async () => {
   try {
