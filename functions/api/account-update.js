@@ -17,13 +17,16 @@ export async function onRequestPost({request,env}){
   const body=await request.json();
   const name=String(body.name||"").trim();
   const username=String(body.username||"").trim().toLowerCase();
+  const avatar=body.avatar===undefined?"":String(body.avatar||"");
   if(name.length<2||name.length>40) return bad("الاسم لازم بين 2 و 40 حرف.",400);
   if(username&&!/^[a-z0-9_]{3,20}$/.test(username)) return bad("اليوزر: 3-20 حرف إنجليزي صغير أو رقم أو _ فقط.",400);
+  if(avatar&&(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(avatar)||avatar.length>400000)) return bad("الصورة غير صالحة أو كبيرة زيادة.",400);
   if(username){
    const taken=await env.DB.prepare("SELECT id FROM users WHERE username=? AND google_sub<>? LIMIT 1").bind(username,s.user.sub).first();
    if(taken) return bad("هذا اليوزر محجوز، جرّب غيره.",409);
   }
   await env.DB.prepare("UPDATE users SET display_name=?,username=?,updated_at=CURRENT_TIMESTAMP WHERE google_sub=?").bind(name,username||null,s.user.sub).run();
+  if(avatar) await env.DB.prepare("UPDATE users SET avatar_url=?,updated_at=CURRENT_TIMESTAMP WHERE google_sub=?").bind(avatar,s.user.sub).run();
   const u=await env.DB.prepare("SELECT id,google_sub,email,display_name,username,avatar_url FROM users WHERE google_sub=? LIMIT 1").bind(s.user.sub).first();
   if(!u) return bad("الحساب غير موجود.",404);
   return Response.json({success:true,user:{id:u.id,sub:u.google_sub,email:u.email||"",name:u.display_name,username:u.username||"",picture:u.avatar_url||""}},{headers:H});

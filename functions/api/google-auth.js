@@ -159,7 +159,7 @@ export async function onRequestPost({ request, env }) {
 
     const payload = b64url(
       enc.encode(JSON.stringify({
-        user,
+        user: { ...user, picture: (user.picture || "").startsWith("https:") && user.picture.length < 500 ? user.picture : "" },
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
       }))
     );
