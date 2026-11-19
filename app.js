@@ -12,7 +12,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
 
 const safeUrl = s => {
   const v = String(s || '');
-  return /^(https?:\/\/|assets\/|\.\/)/i.test(v) ? esc(v) : '#';
+  return /^(https?:\/\/|assets\/|\.\/|data:image\/)/i.test(v) ? esc(v) : '#';
 };
 
 function render() {
@@ -81,6 +81,7 @@ fetch('./mods.json')
   .then(data => {
     mods = Array.isArray(data) ? data : [];
     render();
+    if (window.gtxLoadCommunity) window.gtxLoadCommunity();
   })
   .catch(err => {
     console.error(err);
@@ -586,6 +587,7 @@ async function refreshPublicMods() {
     const r = await fetch("./mods.json?time=" + Date.now());
     mods = await r.json();
     render();
+    if (window.gtxLoadCommunity) window.gtxLoadCommunity();
   } catch(e) { console.error(e); }
 }
 
