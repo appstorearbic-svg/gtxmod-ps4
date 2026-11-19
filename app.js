@@ -850,7 +850,7 @@ render = function() {
     const liked = !!gtxLikes["liked_" + m.id];
     const likes = Number(gtxLikes[m.id]) || 0;
     return `
-    <article class="mod-card">
+    <article class="mod-card">${window.gtxOwnerBar?window.gtxOwnerBar(m):""}
       <div class="mod-image gtx-media" data-media="0"
            style="position:relative;overflow:hidden;touch-action:pan-y">
         <img class="gtx-media-image" src="${safeUrl(m.image)}"

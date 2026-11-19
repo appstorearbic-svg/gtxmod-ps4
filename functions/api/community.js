@@ -23,7 +23,7 @@ async function ghPut(env,path,buf,msg){
  const r=await fetch("https://api.github.com/repos/"+repo+"/contents/"+path,{method:"PUT",headers:{Authorization:"Bearer "+token,Accept:"application/vnd.github+json","User-Agent":"GTXMOD","Content-Type":"application/json"},body:JSON.stringify({message:msg,content:toB64(buf),branch:env.GITHUB_BRANCH||"main"})});
  if(!r.ok)throw new Error("فشل رفع الملف إلى GitHub ("+r.status+")");
 }
-function rowToMod(r){return{id:r.id,name:r.name,category:r.category,description:r.description||"",image:r.thumb||r.image||"",cover:r.image||"",download:r.download||"",size:r.size||"",owner:r.owner_name||"",date:(r.created_at||"").slice(0,10),fileType:"ZIP"};}
+function rowToMod(r){return{id:r.id,name:r.name,category:r.category,description:r.description||"",image:r.thumb||r.image||"",cover:r.image||"",download:r.download||"",size:r.size||"",owner:r.odm||r.owner_name||"",ownerAvatar:r.oav||"",ownerUsername:r.oun||"",date:(r.created_at||"").slice(0,10),fileType:"ZIP"};}
 export async function onRequestGet({request,env}){
  try{
   if(!env.DB)return bad("قاعدة البيانات غير مربوطة.",503);
@@ -31,10 +31,10 @@ export async function onRequestGet({request,env}){
   if(new URL(request.url).searchParams.get("mine")==="1"){
    const u=await getSession(request,env);
    if(!u)return bad("سجل دخول أولاً.",401);
-   const rs=await env.DB.prepare("SELECT * FROM user_mods WHERE owner_sub=? ORDER BY created_at DESC").bind(u.sub).all();
+   const rs=await env.DB.prepare("SELECT m.*, u.avatar_url AS oav, u.username AS oun, u.display_name AS odm FROM user_mods m LEFT JOIN users u ON u.google_sub=m.owner_sub WHERE m.owner_sub=? ORDER BY m.created_at DESC").bind(u.sub).all();
    return Response.json({success:true,mods:(rs.results||[]).map(rowToMod)},{headers:H});
   }
-  const rs=await env.DB.prepare("SELECT * FROM user_mods ORDER BY created_at DESC LIMIT 200").all();
+  const rs=await env.DB.prepare("SELECT m.*, u.avatar_url AS oav, u.username AS oun, u.display_name AS odm FROM user_mods m LEFT JOIN users u ON u.google_sub=m.owner_sub ORDER BY m.created_at DESC LIMIT 200").all();
   return Response.json({success:true,mods:(rs.results||[]).map(rowToMod)},{headers:H});
  }catch(e){return bad("صار خطأ بالخادم.",500);}
 }
