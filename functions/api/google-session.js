@@ -28,7 +28,11 @@ export async function onRequestGet({ request, env }) {
   const headers = { "Cache-Control": "no-store" };
 
   try {
-    if (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+    if (
+      !env.SESSION_SECRET ||
+      env.SESSION_SECRET.length < 32 ||
+      !env.DB
+    ) {
       return Response.json({ success: false }, { headers });
     }
 
@@ -71,8 +75,29 @@ export async function onRequestGet({ request, env }) {
       return Response.json({ success: false }, { headers });
     }
 
+    // جلب أحدث ملف شخصي من قاعدة D1.
+    const dbUser = await env.DB.prepare(`
+      SELECT id, google_sub, email, display_name, username, avatar_url
+      FROM users
+      WHERE google_sub = ?
+      LIMIT 1
+    `).bind(session.user.sub).first();
+
+    if (!dbUser) {
+      return Response.json({ success: false }, { headers });
+    }
+
+    const user = {
+      id: dbUser.id,
+      sub: dbUser.google_sub,
+      email: dbUser.email || "",
+      name: dbUser.display_name,
+      username: dbUser.username || "",
+      picture: dbUser.avatar_url || ""
+    };
+
     return Response.json(
-      { success: true, user: session.user },
+      { success: true, user },
       { headers }
     );
   } catch {
