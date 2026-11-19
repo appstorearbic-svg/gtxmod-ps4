@@ -117,10 +117,122 @@ menuPanel.style.cssText = 'display:none;position:fixed;top:65px;right:12px;z-ind
 
 menuPanel.innerHTML = `
   <h3 style="margin:5px 0 15px">GTXMOD PS4</h3>
-  <button id="adminOpen" style="width:100%;padding:13px;background:#1769aa;color:white;border:0;border-radius:9px;font-size:16px">👤 المدير</button>
+  <button id="googleLoginOpen" style="width:100%;padding:13px;background:#087bd0;color:white;border:0;border-radius:9px;font-size:16px">🔐 تسجيل دخول</button>
+  <button id="googleLogout" style="display:none;width:100%;padding:13px;margin-top:8px;background:#263d59;color:white;border:0;border-radius:9px;font-size:16px">تسجيل الخروج</button>
+  <button id="adminOpen" style="width:100%;padding:13px;margin-top:8px;background:#1769aa;color:white;border:0;border-radius:9px;font-size:16px">👤 المدير</button>
 `;
 
+
 document.body.appendChild(menuPanel);
+
+// Google account sign-in (Google Identity Services)
+const googleLoginBox = document.createElement("div");
+googleLoginBox.id = "googleLoginBox";
+googleLoginBox.style.cssText = "display:none;position:fixed;inset:0;background:#000d;z-index:10002;align-items:center;justify-content:center;padding:20px";
+googleLoginBox.innerHTML = `<div class="google-login-card">
+  <h2>تسجيل الدخول إلى GTXMOD</h2>
+  <p>اختر حساب Google للدخول وحفظ حسابك على هذا الجهاز.</p>
+  <div id="googleButtonHost" style="display:flex;justify-content:center;min-height:45px"></div>
+  <p id="googleLoginMessage" role="status"></p>
+  <button class="google-close" id="googleLoginClose">إغلاق</button>
+</div>`;
+document.body.appendChild(googleLoginBox);
+
+const accountAvatar = document.getElementById("accountAvatar");
+const accountInitial = document.getElementById("accountInitial");
+const accountBtn = document.getElementById("accountBtn");
+const googleLoginOpen = document.getElementById("googleLoginOpen");
+const googleLogout = document.getElementById("googleLogout");
+let gtxGoogleUser = null;
+
+function paintGoogleAccount(user) {
+  gtxGoogleUser = user || null;
+  if (user && user.picture) {
+    accountAvatar.src = user.picture;
+    accountAvatar.hidden = false;
+    accountInitial.hidden = true;
+    accountBtn.title = user.name || user.email || "حسابي";
+    googleLoginOpen.textContent = "👤 " + (user.name || "حسابي");
+    googleLogout.style.display = "block";
+  } else {
+    accountAvatar.hidden = true;
+    accountAvatar.removeAttribute("src");
+    accountInitial.hidden = false;
+    accountInitial.textContent = "👤";
+    accountBtn.title = "تسجيل الدخول";
+    googleLoginOpen.textContent = "🔐 تسجيل دخول";
+    googleLogout.style.display = "none";
+  }
+}
+
+async function loadGoogleSession() {
+  try {
+    const r = await fetch("/api/google-session", {credentials:"same-origin"});
+    const data = await r.json();
+    if (r.ok && data.success && data.user) paintGoogleAccount(data.user);
+  } catch (e) { console.warn("Google session unavailable", e); }
+}
+loadGoogleSession();
+
+function showGoogleLogin() {
+  menuPanel.style.display = "none";
+  googleLoginBox.style.display = "flex";
+  const host = document.getElementById("googleButtonHost");
+  const msg = document.getElementById("googleLoginMessage");
+  host.innerHTML = "";
+  msg.textContent = "";
+  const clientId = document.querySelector('meta[name="google-client-id"]')?.content?.trim();
+  if (!clientId || clientId === "YOUR_GOOGLE_CLIENT_ID") {
+    msg.textContent = "يلزم إعداد Google Client ID للموقع أولاً.";
+    return;
+  }
+  const draw = () => {
+    if (!window.google?.accounts?.id) {
+      msg.textContent = "تعذر تحميل خدمة Google. حدّث الصفحة وحاول مجدداً.";
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async response => {
+        msg.textContent = "جاري التحقق من الحساب...";
+        try {
+          const result = await fetch("/api/google-auth", {
+            method:"POST", credentials:"same-origin",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({credential:response.credential})
+          });
+          const payload = await result.json();
+          if (!result.ok || !payload.success) throw new Error(payload.message || "فشل تسجيل الدخول");
+          paintGoogleAccount(payload.user);
+          googleLoginBox.style.display = "none";
+        } catch (err) { msg.textContent = err.message; }
+      }
+    });
+    google.accounts.id.renderButton(host, {theme:"filled_blue",size:"large",shape:"pill",text:"continue_with",locale:"ar"});
+  };
+  if (window.google?.accounts?.id) draw();
+  else {
+    let attempts = 0;
+    const wait = setInterval(() => {
+      attempts++;
+      if (window.google?.accounts?.id || attempts > 30) {
+        clearInterval(wait);
+        draw();
+      }
+    }, 200);
+  }
+}
+googleLoginOpen.onclick = showGoogleLogin;
+accountBtn.onclick = showGoogleLogin;
+document.getElementById("googleLoginClose").onclick = () => googleLoginBox.style.display = "none";
+googleLogout.onclick = async () => {
+  try {
+    await fetch("/api/google-logout", {method:"POST",credentials:"same-origin"});
+    paintGoogleAccount(null);
+    menuPanel.style.display = "none";
+  } catch (e) { alert("تعذر تسجيل الخروج"); }
+};
+
 
 const loginBox = document.createElement('div');
 loginBox.id = 'adminLogin';
