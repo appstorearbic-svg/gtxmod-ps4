@@ -45,6 +45,7 @@ export async function onRequestPost({request,env}){
   if(origin&&origin!==new URL(request.url).origin)return bad("طلب غير مسموح.",403);
   const u=await getSession(request,env);
   if(!u)return bad("سجل دخول أولاً.",401);
+  try{const bu=await env.DB.prepare("SELECT banned_until FROM users WHERE google_sub=?").bind(u.sub).first();if(bu&&Number(bu.banned_until||0)>Date.now())return bad("🚫 موقوف عن النشر مؤقتاً، يفتح تلقائياً بعد "+Math.ceil((Number(bu.banned_until)-Date.now())/3600000)+" ساعة.",403);}catch(e){}
   await ensureTable(env);
   const ct=request.headers.get("Content-Type")||"";
   if(ct.includes("application/json")){
