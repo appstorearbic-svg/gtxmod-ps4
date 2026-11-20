@@ -1,6 +1,6 @@
-// GTXMOD — كود أحمر أسفل الصورة وعلى اليسار
+// GTXMOD — كود أحمر تحت الصورة وفي المنتصف
 (function(){
-    const LS_CODE_MAP = "gtx_code_map_bl"; // bottom-left
+    const LS_CODE_MAP = "gtx_code_map_center_below"; 
 
     function getMap() { 
         try { return JSON.parse(localStorage.getItem(LS_CODE_MAP)||"{}"); } 
@@ -72,85 +72,77 @@
             currentValidIds.add(id);
 
             // منع التكرار
-            if(card.querySelector('.gtx-bl-code')) return;
+            if(card.querySelector('.gtx-below-code')) return;
 
             const code = getCodeForId(id);
 
             // إنشاء عنصر الكود
             const badge = document.createElement('div');
-            badge.className = 'gtx-bl-code';
+            badge.className = 'gtx-below-code';
             badge.textContent = code;
             
-            // التصميم: تحت الصورة، محاذاة لليسار
-            // نستخدم display:block و margin-right:auto لدفعه لليمين؟ لا، نحن نريد اليسار.
-            // في RTL، اليسار هو النهاية. لكننا نريد أن يظهر في الجهة اليسرى من الشاشة.
-            // الحل: نضعه داخل حاوية أو نستخدم position relative للأب ونضعه absolute أسفل يسار الصورة.
+            // التصميم: تحت الصورة، في المنتصف الأفقي
+            badge.style.cssText = `
+                display: block;
+                width: fit-content; /* العرض حسب النص فقط */
+                margin: 8px auto;   /* هامش علوي وسفلي 8 بكسل، وتوسيط أفقي تلقائي */
+                background: #ef4444; /* أحمر واضح */
+                color: white;
+                font-family: monospace;
+                font-weight: 900;
+                font-size: 13px;
+                padding: 4px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+                text-align: center;
+                letter-spacing: 1px;
+                transition: transform .2s, box-shadow .2s;
+                z-index: 5;
+                direction: ltr; /* لضمان قراءة الكود بشكل صحيح LTR */
+                user-select: none;
+                clear: both; /* للتأكد أنه يبدأ سطراً جديداً */
+            `;
             
-            // الطريقة الأكثر أماناً دون كسر الـ CSS الأصلي:
-            // نجعل الحاوية الأب (الصورة) position:relative إذا لم تكن كذلك، ثم نضع الكود absolute.
-            
-            const imgContainer = card.querySelector('.mod-image, .image-wrapper, img')?.parentElement || card.querySelector('.mod-image');
-            
-            if(imgContainer) {
-                // التأكد من أن الحاوية تسمح بالوضع المطلق
-                if(getComputedStyle(imgContainer).position === 'static') {
-                    imgContainer.style.position = 'relative';
-                }
+            // تأثير عند المرور عليه
+            badge.onmouseover = () => {
+                badge.style.transform = "scale(1.05)";
+                badge.style.boxShadow = "0 4px 10px rgba(239, 68, 68, 0.6)";
+            };
+            badge.onmouseout = () => {
+                badge.style.transform = "scale(1)";
+                badge.style.boxShadow = "0 2px 6px rgba(239, 68, 68, 0.4)";
+            };
 
-                badge.style.cssText = `
-                    position: absolute;
-                    bottom: 8px; /* أسفل الصورة بـ 8 بكسل */
-                    left: 8px;   /* على اليسار بـ 8 بكسل */
-                    background: #ef4444; /* أحمر واضح */
-                    color: white;
-                    font-family: monospace;
-                    font-weight: 900;
-                    font-size: 12px;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    z-index: 10;
-                    cursor: pointer;
-                    box-shadow: 0 2px 5px rgba(0,0,0,.3);
-                    direction: ltr; /* لضمان قراءة الكود بشكل صحيح */
-                    user-select: none;
-                    line-height: 1;
-                `;
-                
-                badge.onclick = (e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(code).then(() => {
-                        showToast("✅ تم نسخ الكود: " + code);
-                    });
-                };
+            // حدث النقر لنسخ الكود
+            badge.onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast("✅ تم نسخ الكود: " + code);
+                });
+            };
 
-                imgContainer.appendChild(badge);
+            // تحديد مكان الإدراج: بعد حاوية الصورة مباشرة
+            // نبحث عن العنصر الذي يحتوي على الصورة (img) أو حاويتها (.mod-image)
+            const imgWrapper = card.querySelector('.mod-image') || card.querySelector('img')?.parentElement;
+            
+            if(imgWrapper) {
+                // إذا وجدنا الحاوية، نضيف الكود بعدها مباشرة
+                imgWrapper.after(badge);
             } else {
-                // احتياطي إذا لم نجد حاوية صورة مناسبة: نضيفه بعد الصورة مباشرة بمحاذاة يسار
-                const imgEl = card.querySelector('img');
-                if(imgEl) {
-                    badge.style.cssText = `
-                        display: block;
-                        width: fit-content;
-                        margin-top: 5px;
-                        margin-left: 0; /* يبدأ من اليسار */
-                        background: #ef4444;
-                        color: white;
-                        font-family: monospace;
-                        font-weight: bold;
-                        font-size: 12px;
-                        padding: 3px 8px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        direction: ltr;
-                    `;
-                    imgEl.after(badge);
-                    
-                    badge.onclick = (e) => {
-                        e.stopPropagation();
-                        navigator.clipboard.writeText(code).then(() => {
-                            showToast("✅ تم نسخ الكود: " + code);
-                        });
-                    };
+                // احتياطي: إذا لم نجد حاوية واضحة، نضيفه في بداية محتوى البطاقة (بعد أي عناوين رئيسية إن وجدت)
+                // أو ببساطة نجعله أول عنصر نصي بعد الصورة المباشرة
+                const firstImg = card.querySelector('img');
+                if(firstImg) {
+                    firstImg.after(badge);
+                } else {
+                    // آخر خيار: نضيفه في نهاية البطاقة قبل زر التحميل إذا كان موجوداً
+                    const downloadBtn = card.querySelector('.download-btn, a.btn-download');
+                    if(downloadBtn) {
+                        downloadBtn.before(badge);
+                    } else {
+                        card.appendChild(badge);
+                    }
                 }
             }
         });
@@ -159,10 +151,10 @@
     }
 
     function showToast(msg) {
-        let t = document.getElementById('gtx-toast-code-bl');
+        let t = document.getElementById('gtx-toast-code-cb');
         if(!t) {
             t = document.createElement('div');
-            t.id = 'gtx-toast-code-bl';
+            t.id = 'gtx-toast-code-cb';
             t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:10px 20px;border-radius:8px;z-index:9999;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.3s;opacity:0;pointer-events:none;direction:rtl;";
             document.body.appendChild(t);
         }
@@ -175,8 +167,8 @@
         setTimeout(applyBadges, 500);
         
         const observer = new MutationObserver((mutations) => {
-            clearTimeout(window._codeBLTimer);
-            window._codeBLTimer = setTimeout(() => {
+            clearTimeout(window._codeCBTimer);
+            window._codeCBTimer = setTimeout(() => {
                 applyBadges();
             }, 300);
         });
