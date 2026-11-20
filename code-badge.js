@@ -85,7 +85,7 @@
             badge.style.cssText = `
                 display: block;
                 width: fit-content; /* العرض حسب النص فقط */
-                margin: 8px auto;   /* هامش علوي وسفلي 8 بكسل، وتوسيط أفقي تلقائي */
+                margin: 4px auto;   /* هامش علوي وسفلي 8 بكسل، وتوسيط أفقي تلقائي */
                 background: #ef4444; /* أحمر واضح */
                 color: white;
                 font-family: monospace;
