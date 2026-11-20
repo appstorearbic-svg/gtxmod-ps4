@@ -1,8 +1,7 @@
-// GTXMOD — كود أحمر ثابت أسفل يسار صورة المنشور
+// GTXMOD — كود أحمر في وسط المنشور (تحت الصورة)
 (function(){
-    const LS_CODE_MAP = "gtx_code_map_final"; // خريطة لتخزين الأكواد
+    const LS_CODE_MAP = "gtx_code_map_center"; // مفتاح جديد لتجنب تعارض مع السابق
 
-    // --- أدوات مساعدة ---
     function getMap() { 
         try { return JSON.parse(localStorage.getItem(LS_CODE_MAP)||"{}"); } 
         catch(e){ return {}; } 
@@ -12,7 +11,6 @@
         localStorage.setItem(LS_CODE_MAP, JSON.stringify(map)); 
     }
 
-    // توليد كود عشوائي (2-7 أحرف، بدون رموز لبس مثل O/I/L/0/1)
     function generateRandomCode(len) {
         const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         let code = "";
@@ -22,55 +20,45 @@
         return code;
     }
 
-    // الحصول على كود فريد أو مستخدم مسبقاَ
     function getCodeForId(id) {
         const map = getMap();
-        
-        // إذا كان هناك كود محفوظ لهذا الـ ID، نرجعه
         if(map[id]) return map[id];
 
-        // محاولة إيجاد كود غير مستخدم حالياً
-        let len = 2 + Math.floor(Math.random() * 6); // 2 to 7
+        let len = 2 + Math.floor(Math.random() * 6); 
         let code = "";
         let attempts = 0;
         const existingCodes = Object.values(map);
 
         while(attempts < 50) {
             code = generateRandomCode(len);
-            // التأكد أن الكود غير مستخدم لـ ID آخر موجود في الخريطة
-            // ملاحظة: بما أننا نحذف المفقودين لاحقاً، فهذا الفحص كافٍ للجلسة الحالية
             if(!existingCodes.includes(code)) break;
-            
             attempts++;
-            if(attempts % 10 === 0) len++; // زيادة الطول إذا فشلنا كثيراً
+            if(attempts % 10 === 0) len++;
         }
         
-        // حفظ الكود الجديد
         map[id] = code;
         saveMap(map);
         return code;
     }
 
-    // تنظيف الخرائط: حذف الأكواد التي لم يعد لها منشور في الصفحة
     function cleanupOrphanedCodes(currentIds) {
         const map = getMap();
         let changed = false;
         for(const id in map) {
             if(!currentIds.has(id)) {
-                delete map[id]; // حذف الكود لأنه لا يوجد له منشور
+                delete map[id];
                 changed = true;
             }
         }
         if(changed) saveMap(map);
     }
 
-    // --- المنطق الرئيسي للعرض ---
     function applyBadges() {
         const cards = document.querySelectorAll('.mod-card, .post-card');
         const currentValidIds = new Set();
 
         cards.forEach(card => {
-            // استخراج ID المنشور
+            // استخراج ID
             let id = card.dataset.id || card.getAttribute('data-id');
             if(!id) {
                 const link = card.querySelector('a.download, a[href$=".zip"]');
@@ -83,68 +71,83 @@
             if(!id) return;
             currentValidIds.add(id);
 
-            // منع التكرار البصري
-            if(card.querySelector('.gtx-red-code')) return;
+            // منع التكرار
+            if(card.querySelector('.gtx-center-code')) return;
 
-            // الحصول على الكود
             const code = getCodeForId(id);
 
-            // البحث عن حاوية الصورة
-            const imgContainer = card.querySelector('.mod-image, .image-wrapper, img')?.parentElement || card.querySelector('.mod-image');
+            // إنشاء عنصر الكود
+            const badge = document.createElement('div');
+            badge.className = 'gtx-center-code';
+            badge.textContent = code;
             
-            if(imgContainer) {
-                // التأكد من أن الحاوية تسمح بالوضع المطلق
-                if(getComputedStyle(imgContainer).position === 'static') {
-                    imgContainer.style.position = 'relative';
+            // التصميم: في منتصف عرض البطاقة، تحت الصورة مباشرة
+            // نستخدم margin auto للتوسيط الأفقي
+            badge.style.cssText = `
+                display: block;
+                width: fit-content;
+                margin: 10px auto; /* توسيط أفقي ومسافة من الأعلى والأسفل */
+                background: #ef4444; /* أحمر واضح */
+                color: white;
+                font-family: monospace;
+                font-weight: 900;
+                font-size: 14px;
+                padding: 4px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+                text-align: center;
+                letter-spacing: 1px;
+                transition: transform .2s, box-shadow .2s;
+                z-index: 5;
+                direction: ltr;
+            `;
+            
+            // تأثير عند المرور عليه
+            badge.onmouseover = () => {
+                badge.style.transform = "scale(1.05)";
+                badge.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.6)";
+            };
+            badge.onmouseout = () => {
+                badge.style.transform = "scale(1)";
+                badge.style.boxShadow = "0 2px 8px rgba(239, 68, 68, 0.4)";
+            };
+
+            // حدث النقر لنسخ الكود
+            badge.onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast("✅ تم نسخ الكود: " + code);
+                });
+            };
+
+            // تحديد مكان الإدراج: بعد الصورة مباشرة
+            const imgEl = card.querySelector('img, .mod-image, .image-wrapper');
+            if(imgEl) {
+                // إذا كانت الصورة داخل حاوية، نضيف الكود بعد الحاوية
+                const parentOfImg = imgEl.parentElement;
+                if(parentOfImg && parentOfImg.classList.contains('image-container')) {
+                    parentOfImg.after(badge);
+                } else {
+                    imgEl.after(badge);
                 }
-
-                // إنشاء عنصر الكود
-                const badge = document.createElement('span');
-                badge.className = 'gtx-red-code';
-                badge.textContent = code;
-                
-                // التصميم: أسفل يسار الصورة، خلفية حمراء شفافة قليلاً، نص أبيض عريض
-                badge.style.cssText = `
-                    position: absolute;
-                    bottom: 8px;
-                    left: 8px;
-                    background: rgba(239, 68, 68, 0.9); /* أحمر شبه شفاف */
-                    color: white;
-                    font-family: monospace;
-                    font-weight: 900;
-                    font-size: 12px;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    z-index: 10;
-                    cursor: pointer;
-                    box-shadow: 0 2px 5px rgba(0,0,0,.3);
-                    direction: ltr; /* لضمان قراءة الكود بشكل صحيح */
-                    user-select: none;
-                `;
-                
-                // حدث النقر لنسخ الكود
-                badge.onclick = (e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(code).then(() => {
-                        showToast("✅ تم نسخ الكود: " + code);
-                    });
-                };
-
-                imgContainer.appendChild(badge);
+            } else {
+                // احتياطي: نضيفه في بداية المحتوى النصي أو نهاية البطاقة
+                const firstChild = card.firstElementChild;
+                if(firstChild) firstChild.before(badge);
+                else card.appendChild(badge);
             }
         });
 
-        // تنظيف الأكواد القديمة التي لم تعد موجودة في الصفحة
         cleanupOrphanedCodes(currentValidIds);
     }
 
-    // --- إشعار Toast ---
     function showToast(msg) {
-        let t = document.getElementById('gtx-toast-code');
+        let t = document.getElementById('gtx-toast-code-center');
         if(!t) {
             t = document.createElement('div');
-            t.id = 'gtx-toast-code';
-            t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ef4444;color:white;padding:10px 20px;border-radius:8px;z-index:9999;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.3s;opacity:0;pointer-events:none;direction:rtl;";
+            t.id = 'gtx-toast-code-center';
+            t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:10px 20px;border-radius:8px;z-index:9999;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.3s;opacity:0;pointer-events:none;direction:rtl;";
             document.body.appendChild(t);
         }
         t.textContent = msg;
@@ -152,14 +155,12 @@
         setTimeout(() => { t.style.opacity = '0'; }, 2000);
     }
 
-    // --- بدء التشغيل والمراقبة ---
     window.addEventListener('load', () => {
         setTimeout(applyBadges, 500);
         
-        // مراقبة التغييرات في الـ DOM (مثلاً عند تصفية التصنيفات أو تحميل صفحات جديدة)
         const observer = new MutationObserver((mutations) => {
-            clearTimeout(window._codeTimer);
-            window._codeTimer = setTimeout(() => {
+            clearTimeout(window._codeCenterTimer);
+            window._codeCenterTimer = setTimeout(() => {
                 applyBadges();
             }, 300);
         });
