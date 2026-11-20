@@ -118,7 +118,7 @@ menuPanel.style.cssText = 'display:none;position:fixed;top:65px;right:12px;z-ind
 
 menuPanel.innerHTML = `
   <h3 style="margin:5px 0 15px">GTXMOD PS4</h3>
-  <button id="googleLoginOpen" style="width:100%;padding:13px;background:#087bd0;color:white;border:0;border-radius:9px;font-size:16px">🔐 تسجيل دخول</button>
+  <button id="googleLoginOpen" style="width:100%;padding:13px;background:#087bd0;color:white;border:0;border-radius:9px;font-size:16px" style="display:none">🔐 تسجيل دخول</button>
   <button id="googleLogout" style="display:none;width:100%;padding:13px;margin-top:8px;background:#263d59;color:white;border:0;border-radius:9px;font-size:16px">تسجيل الخروج</button>
   <button id="adminOpen" style="width:100%;padding:13px;margin-top:8px;background:#1769aa;color:white;border:0;border-radius:9px;font-size:16px">👤 المدير</button>
 `;
@@ -669,7 +669,6 @@ const credit = document.createElement("a");
 credit.href = "https://t.me/h_y_88";
 credit.target = "_blank";
 credit.rel = "noopener";
-credit.innerHTML = "✈️ Telegram&nbsp; @h_y_88";
 credit.style.cssText = "position:fixed;z-index:9998;padding:8px 13px;background:#087ebc;color:white;border:1px solid #69caff;border-radius:22px;text-decoration:none;font-weight:bold;box-shadow:0 4px 18px #0009;transition:top 1s,left 1s,right 1s,bottom 1s";
 document.body.appendChild(credit);
 
