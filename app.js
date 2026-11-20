@@ -24,7 +24,7 @@ function render() {
   empty.classList.toggle('hidden', shown.length > 0);
 
   grid.innerHTML = shown.map(m => `
-    <article class="mod-card">
+    <article class="mod-card" data-id="${esc(m.id)}">
 
       <div class="mod-image">
         <img src="${safeUrl(m.image)}"
