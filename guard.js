@@ -1,4 +1,4 @@
-// GTXMOD — حارس الدخول الخفيف (Non-Intrusive)
+// GTXMOD — حارس الدخول القوي (Global Interceptor)
 (function(){
     const LS_INVITES = "gtx_invites_v1";
     const LS_PENDING = "gtx_pending_code";
@@ -77,12 +77,14 @@
         m.onclick=e=>{if(e.target===m)m.remove();};
     }
 
-    // --- المنطق الرئيسي: إضافة/إزالة الطبقة الشفافة ---
-    function manageOverlay() {
-        const accBtn = document.getElementById("accountBtn");
-        if(!accBtn) return;
+    // --- المنطق الرئيسي: اعتراض النقر عالمياً ---
+    document.addEventListener("click", function(e) {
+        // 1. هل النقرة كانت على صورة الحساب؟
+        // نبحث عن أقرب أب يحمل ID accountBtn
+        const accBtn = e.target.closest("#accountBtn");
+        if (!accBtn) return; // ليست نقرة على الصورة، نتجاهلها
 
-        // فحص هل المستخدم مسجل؟
+        // 2. هل المستخدم مسجل دخول؟
         const initial = document.getElementById("accountInitial");
         const avatar = document.getElementById("accountAvatar");
         const name = document.getElementById("userNameDisplay");
@@ -92,43 +94,19 @@
             (avatar && avatar.style.display !== "none") ||
             (name && name.textContent.trim() !== "");
 
-        let overlay = document.getElementById("gtxAccShield");
-
-        if(isLogged) {
-            // ✅ مسجل: إزالة أي طبقة حماية ليعمل الزر الأصلي
-            if(overlay) overlay.remove();
+        if (isLogged) {
+            // ✅ مسجل: لا نفعل شيئاَ، ونترك app.js يتعامل مع النقر (فتح القائمة)
+            return;
         } else {
-            // ❌ غير مسجل: إضافة طبقة شفافة فوق الصورة
-            if(!overlay) {
-                overlay = document.createElement("div");
-                overlay.id = "gtxAccShield";
-                // نضعها داخل accountBtn لتكون فوقه مباشرة
-                overlay.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;z-index:100;cursor:pointer;background:transparent;";
-                
-                // منع app.js من التقاط النقر عبر stopPropagation هنا
-                overlay.addEventListener("click", function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    showInviteModal();
-                });
-                
-                accBtn.appendChild(overlay);
-            }
+            // ❌ غير مسجل: نمنع النقر الافتراضي ونعرض نافذة الرمز
+            e.preventDefault();
+            e.stopImmediatePropagation(); // نوقف انتشار الحدث لمنع app.js من العمل
+            showInviteModal();
         }
-    }
+    }, true); // capture phase لضمان الوقف قبل أي handler آخر
 
-    // --- بدء التشغيل والمراقبة ---
+    // --- تنظيف الرمز المعلق بعد نجاح الدخول ---
     window.addEventListener("load", () => {
-        // تأخير بسيط لضمان تحميل DOM
-        setTimeout(manageOverlay, 500);
-        
-        // مراقبة التغيرات في الـ DOM (مثلاً بعد تسجيل خروج أو دخول)
-        const observer = new MutationObserver(() => {
-            manageOverlay();
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-        
-        // تنظيف الرمز المعلق بعد نجاح الدخول
         setInterval(() => {
             const pending = localStorage.getItem(LS_PENDING);
             if(pending) {
