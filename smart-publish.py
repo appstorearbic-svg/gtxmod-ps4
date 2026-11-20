@@ -37,7 +37,7 @@ def select_target_repo():
     
     # قاعدة بسيطة: إذا تجاوز العدد 50 موداً في الرئيسي، ننتقل للثاني
     # يمكنك تغيير الرقم حسب حاجتك
-    MAX_LIMIT_PRIMARY = 50 
+    MAX_LIMIT_PRIMARY = 1 
     
     if count_primary < MAX_LIMIT_PRIMARY:
         return "primary"

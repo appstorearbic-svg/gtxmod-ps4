@@ -1,115 +1,95 @@
-const REPO = "appstorearbic-svg/gtxmod-ps4";
-const BRANCH = "main";
-const CATEGORIES = ["سيارات", "طيارات", "موطورات", "قوارب", "شخصيات", "مابات", "سكربتات"];
-
-export async function onRequestPost({request, env}) {
-  try {
-    const form = await request.formData();
-    const username = form.get("username");
-    const password = form.get("password");
-
-    if (username !== env.ADMIN_USERNAME ||
-        password !== env.ADMIN_PASSWORD ||
-        !env.GITHUB_TOKEN) {
-      return Response.json({success:false,message:"غير مصرح"}, {status:401});
+// GTXMOD — Publisher API (Link Based)
+export async function onRequestPost(context) {
+    const { request, env } = context;
+    
+    if (!env.GITHUB_TOKEN) {
+        return Response.json({ error: "Server Config Error: Missing GitHub Token" }, { status: 500 });
     }
 
-    const name = String(form.get("name") || "").trim();
-    const category = String(form.get("category") || "");
-    const description = String(form.get("description") || "").trim();
-    const image = form.get("image");
-    const zip = form.get("zip");
-    const video = form.get("video");
+    try {
+        const formData = await request.formData();
+        const downloadUrl = formData.get('downloadUrl');
+        const title = formData.get('title');
+        const category = formData.get('category');
+        const description = formData.get('description') || '';
+        const size = formData.get('size') || 'Unknown';
+        
+        if (!downloadUrl || !title || !category) {
+            return Response.json({ error: "Missing required fields (URL, Title, Category)" }, { status: 400 });
+        }
 
-    if (!name || !CATEGORIES.includes(category) ||
-        !image || !zip || typeof image === "string" ||
-        typeof zip === "string") {
-      return Response.json({success:false,message:"أكمل البيانات والملفات"}, {status:400});
+        // 1. قراءة mods.json الحالي من GitHub
+        const OWNER = "appstorearbic-svg";
+        const REPO = "gtxmod-ps4";
+        const FILE_PATH = "mods.json";
+        const BRANCH = "main";
+        
+        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?ref=${BRANCH}`;
+        
+        const getRes = await fetch(apiUrl, {
+            headers: {
+                "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+                "Accept": "application/vnd.github.v3+json"
+            }
+        });
+
+        let currentMods = [];
+        let sha = null;
+
+        if (getRes.ok) {
+            const data = await getRes.json();
+            if (data.content) {
+                const decoded = atob(data.content.replace(/\n/g, ''));
+                currentMods = JSON.parse(decoded);
+                sha = data.sha;
+            }
+        } else if (getRes.status !== 404) {
+            throw new Error(`Failed to read mods.json: ${getRes.statusText}`);
+        }
+
+        // 2. إضافة المود الجديد
+        const newMod = {
+            id: Date.now().toString(),
+            title: title,
+            category: category,
+            description: description,
+            url: downloadUrl, // <-- الرابط الخارجي مباشرة
+            image: "", // يمكن إضافته لاحقاً
+            size: size,
+            date: new Date().toISOString().split('T')[0]
+        };
+        
+        currentMods.push(newMod);
+
+        // 3. تحديث الملف في GitHub
+        const updateUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`;
+        
+        const body = {
+            message: `Publish mod via Web: ${title}`,
+            content: btoa(JSON.stringify(currentMods, null, 2)),
+            branch: BRANCH,
+            sha: sha
+        };
+
+        const putRes = await fetch(updateUrl, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (putRes.ok) {
+            return Response.json({ success: true, message: "Mod published successfully!" });
+        } else {
+            const errData = await putRes.text();
+            console.error("GitHub Update Failed:", errData);
+            return Response.json({ error: "Failed to update GitHub repo", details: errData }, { status: 500 });
+        }
+
+    } catch (e) {
+        console.error(e);
+        return Response.json({ error: e.message }, { status: 500 });
     }
-
-    if (image.size > 10*1024*1024 || zip.size > 25*1024*1024 ||
-        (video && typeof video !== "string" && video.size > 20*1024*1024)) {
-      return Response.json({success:false,message:"حجم أحد الملفات أكبر من المسموح"}, {status:400});
-    }
-
-    const headers = {
-      Authorization: "Bearer " + env.GITHUB_TOKEN,
-      Accept: "application/vnd.github+json",
-      "User-Agent": "GTXMOD-PS4-Publisher",
-      "X-GitHub-Api-Version": "2022-11-28"
-    };
-
-    const api = "https://api.github.com/repos/" + REPO + "/contents/";
-
-    async function putFile(path, file, message) {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      let binary = "";
-      for (let i=0; i<bytes.length; i+=8192) {
-        binary += String.fromCharCode(...bytes.subarray(i, i+8192));
-      }
-      const res = await fetch(api + path, {
-        method:"PUT",
-        headers,
-        body:JSON.stringify({
-          message,
-          content:btoa(binary),
-          branch:BRANCH
-        })
-      });
-      if (!res.ok) throw new Error("GitHub upload failed: " + await res.text());
-      return res.json();
-    }
-
-    const slug = "mod-" + Date.now();
-    const base = "assets/mods/" + slug + "/";
-    const ext = (image.name.split(".").pop() || "jpg").toLowerCase();
-    const imagePath = base + "cover." + ext;
-    const zipPath = base + "mod.zip";
-
-    await putFile(imagePath, image, "Upload mod image: " + name);
-    await putFile(zipPath, zip, "Upload mod ZIP: " + name);
-
-    let videoPath = "";
-    if (video && typeof video !== "string" && video.size) {
-      const vext = (video.name.split(".").pop() || "mp4").toLowerCase();
-      videoPath = base + "preview." + vext;
-      await putFile(videoPath, video, "Upload mod video: " + name);
-    }
-
-    const listRes = await fetch(api + "mods.json?ref=" + BRANCH, {headers});
-    if (!listRes.ok) throw new Error("Cannot read mods.json");
-    const current = await listRes.json();
-    const decoded = atob(current.content.replace(/\n/g, ""));
-    const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
-    const mods = JSON.parse(new TextDecoder().decode(bytes));
-
-    mods.unshift({
-      id:slug,
-      name,
-      category,
-      fileType:"ZIP",
-      description:description || ("مود " + name + " للعبة GTA V على PS4."),
-      image:imagePath,
-      download:zipPath,
-      video:videoPath,
-      size:(zip.size/1048576).toFixed(1) + " MB"
-    });
-
-    const updated = await fetch(api + "mods.json", {
-      method:"PUT",
-      headers,
-      body:JSON.stringify({
-        message:"Publish mod: " + name,
-        content:btoa(unescape(encodeURIComponent(JSON.stringify(mods,null,2)+"\n"))),
-        sha:current.sha,
-        branch:BRANCH
-      })
-    });
-
-    if (!updated.ok) throw new Error("Could not update mods.json: " + await updated.text());
-
-    return Response.json({success:true,message:"تم نشر المود بنجاح"});
-  } catch(e) {
-    return Response.json({success:false,message:e.message || "حدث خطأ"}, {status:500});
-  }
 }
