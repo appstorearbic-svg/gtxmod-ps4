@@ -105,23 +105,24 @@ export async function onRequestPost({request,env}){
   const f=await request.formData();
   const name=String(f.get("name")||"").trim(),category=String(f.get("category")||"").trim();
   const description=String(f.get("description")||"").trim().slice(0,600),thumb=String(f.get("thumb")||"");
-  const image=f.get("image"),zip=f.get("zip");
+  const image=f.get("image"),download=String(f.get("download")||"").trim();
   if(name.length<2||name.length>60)return bad("اسم المود لازم بين 2 و 60 حرف.",400);
   if(!CATS.includes(category))return bad("اختار تصنيف صحيح.",400);
   if(!image||!image.size)return bad("اختار صورة للمود.",400);
-  if(!zip||!zip.size)return bad("اختار ملف ZIP.",400);
   if(image.size>4194304)return bad("الصورة أكبر من 4MB.",400);
-  if(zip.size>20971520)return bad("ملف المود أكبر من 20MB.",400);
+  if(download.length>2048)return bad("رابط التحميل طويل جداً.",400);
+  let downloadUrl;
+  try{const parsed=new URL(download);if(!["http:","https:"].includes(parsed.protocol))throw new Error();downloadUrl=parsed.href;}
+  catch(e){return bad("رابط التحميل غير صالح. استخدم رابط http أو https.",400);}
   if(thumb&&(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(thumb)||thumb.length>300000))return bad("صورة المعاينة غير صالحة.",400);
   const id="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const ext=(String(image.name||"jpg").split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
-  const ipath="assets/mods/community/"+id+"."+ext,zpath="assets/mods/community/"+id+".zip";
-  const imageBuffer=await image.arrayBuffer(),zipBuffer=await zip.arrayBuffer();
-  const storage=await chooseStorage(env,image.size+zip.size);
+  const ipath="assets/mods/community/"+id+"."+ext;
+  const imageBuffer=await image.arrayBuffer();
+  const storage=await chooseStorage(env,image.size);
   await ghPut(storage,ipath,imageBuffer,"Community image: "+name);
-  await ghPut(storage,zpath,zipBuffer,"Community mod: "+name);
-  const imageUrl=storageUrl(storage,ipath),downloadUrl=storageUrl(storage,zpath);
-  const size=(zip.size/1048576).toFixed(1)+" MB";
+  const imageUrl=storageUrl(storage,ipath);
+  const size="رابط خارجي";
   await env.DB.prepare("INSERT INTO user_mods (id,owner_sub,owner_name,name,category,description,image,thumb,download,size) VALUES (?,?,?,?,?,?,?,?,?,?)").bind(id,u.sub,u.name||"",name,category,description,imageUrl,thumb||"",downloadUrl,size).run();
   const r=await env.DB.prepare("SELECT * FROM user_mods WHERE id=?").bind(id).first();
   return Response.json({success:true,mod:rowToMod(r),message:"تم النشر! التحميل يصير متاح خلال دقيقة تقريباً."},{headers:H});

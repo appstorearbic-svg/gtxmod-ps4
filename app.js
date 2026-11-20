@@ -625,6 +625,11 @@ grid.addEventListener("click", async e => {
   if (!link) return;
   e.preventDefault();
   const url = link.href;
+  if (new URL(url,window.location.href).origin !== window.location.origin) {
+    const opened = window.open(url,"_blank","noopener,noreferrer");
+    if (!opened) window.location.href = url;
+    return;
+  }
   const oldText = link.textContent;
   link.style.pointerEvents = "none";
   link.textContent = "جاري التحميل 0%";
