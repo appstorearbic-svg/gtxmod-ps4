@@ -1,14 +1,15 @@
-// GTXMOD — حارس الدخول القوي (Global Interceptor)
+// GTXMOD — حارس الدخول الآمن (فحص خادمي + اعتراض نقرة)
 (function(){
     const LS_INVITES = "gtx_invites_v1";
     const LS_PENDING = "gtx_pending_code";
+    let isCheckingSession = false; // لمنع تكرار الطلبات أثناء النقر
 
     // --- أدوات الرموز ---
     function getInvites() { try { return JSON.parse(localStorage.getItem(LS_INVITES)||"[]"); } catch(e){ return []; } }
     function saveInvites(l) { localStorage.setItem(LS_INVITES, JSON.stringify(l)); }
     
     function genCode() {
-        const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        const c="ABCDEFGHJKLMNPQRSTUVWXYZ234156789"; // بدون O,I,L,0 لتجنب اللبس
         let s=""; for(let i=0;i<8;i++) s+=c[Math.floor(Math.random()*c.length)];
         return s;
     }
@@ -77,30 +78,51 @@
         m.onclick=e=>{if(e.target===m)m.remove();};
     }
 
-    // --- المنطق الرئيسي: اعتراض النقر عالمياً ---
-    document.addEventListener("click", function(e) {
+    // --- دالة فحص الجلسة الحقيقية من الخادم ---
+    async function hasActiveSession() {
+        try {
+            const res = await fetch('/api/google-session', {
+                method: 'GET',
+                credentials: 'include', // يرسل الـ Cookies تلقائياً
+                cache: 'no-store'
+            });
+            const data = await res.json();
+            return data.success === true && !!data.user;
+        } catch (e) {
+            console.error("Session check failed:", e);
+            return false; // في حال الخطأ، نفترض عدم وجود جلسة للأمان
+        }
+    }
+
+    // --- الاعتراض الذكي للنقر ---
+    document.addEventListener("click", async function(e) {
         // 1. هل النقرة كانت على صورة الحساب؟
-        // نبحث عن أقرب أب يحمل ID accountBtn
         const accBtn = e.target.closest("#accountBtn");
-        if (!accBtn) return; // ليست نقرة على الصورة، نتجاهلها
+        if (!accBtn) return;
 
-        // 2. هل المستخدم مسجل دخول؟
-        const initial = document.getElementById("accountInitial");
-        const avatar = document.getElementById("accountAvatar");
-        const name = document.getElementById("userNameDisplay");
-        
-        const isLogged = 
-            (initial && initial.textContent !== "👤") || 
-            (avatar && avatar.style.display !== "none") ||
-            (name && name.textContent.trim() !== "");
-
-        if (isLogged) {
-            // ✅ مسجل: لا نفعل شيئاَ، ونترك app.js يتعامل مع النقر (فتح القائمة)
-            return;
-        } else {
-            // ❌ غير مسجل: نمنع النقر الافتراضي ونعرض نافذة الرمز
+        // منع التكرار أثناء الفحص
+        if (isCheckingSession) {
             e.preventDefault();
-            e.stopImmediatePropagation(); // نوقف انتشار الحدث لمنع app.js من العمل
+            return;
+        }
+
+        // 2. نوقف الحدث الافتراضي مؤقتاً حتى نتأكد
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        
+        isCheckingSession = true;
+        
+        // 3. فحص الخادم: هل يوجد جلسة نشطة؟
+        const loggedIn = await hasActiveSession();
+        
+        isCheckingSession = false;
+
+        if (loggedIn) {
+            // ✅ مسجل دخول: نحاكي الضغط الأصلي لفتح القائمة (دون إعادة تحميل الصفحة)
+            // نستدعي الدالة التي تفتح القائمة في app.js إذا كانت معروفة، أو نطلق حدث click جديد
+            accBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        } else {
+            // ❌ غير مسجل: نعرض نافذة الرمز إجبارياً
             showInviteModal();
         }
     }, true); // capture phase لضمان الوقف قبل أي handler آخر
@@ -110,12 +132,12 @@
         setInterval(() => {
             const pending = localStorage.getItem(LS_PENDING);
             if(pending) {
-                const initial = document.getElementById("accountInitial");
-                if(initial && initial.textContent !== "👤") {
-                    localStorage.removeItem(LS_PENDING);
-                }
+                // نتحقق مرة أخرى من الخادم للتأكد أن الدخول تم فعلاً
+                hasActiveSession().then(loggedIn => {
+                    if(loggedIn) localStorage.removeItem(LS_PENDING);
+                });
             }
-        }, 1000);
+        }, 2000);
     });
 
 })();
