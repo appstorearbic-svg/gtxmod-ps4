@@ -118,7 +118,7 @@ menuPanel.style.cssText = 'display:none;position:fixed;top:65px;right:12px;z-ind
 
 menuPanel.innerHTML = `
   <h3 style="margin:5px 0 15px">GTXMOD PS4</h3>
-  <button id="googleLoginOpen" style="width:100%;padding:13px;background:#087bd0;color:white;border:0;border-radius:9px;font-size:16px" style="display:none">🔐 تسجيل دخول</button>
+  
   <button id="googleLogout" style="display:none;width:100%;padding:13px;margin-top:8px;background:#263d59;color:white;border:0;border-radius:9px;font-size:16px">تسجيل الخروج</button>
   <button id="adminOpen" style="width:100%;padding:13px;margin-top:8px;background:#1769aa;color:white;border:0;border-radius:9px;font-size:16px">👤 المدير</button>
 `;
@@ -160,68 +160,6 @@ document.body.appendChild(googleLoginBox);
 const accountAvatar = document.getElementById("accountAvatar");
 const accountInitial = document.getElementById("accountInitial");
 const accountBtn = document.getElementById("accountBtn");
-const googleLoginOpen = document.getElementById("googleLoginOpen");
-const googleLogout = document.getElementById("googleLogout");
-let gtxGoogleUser = null;
-
-function paintGoogleAccount(user) {
-  gtxGoogleUser = user || null;
-
-  if (user) {
-    if (user.picture) {
-      accountAvatar.src = user.picture;
-      accountAvatar.hidden = false;
-      accountInitial.hidden = true;
-      document.getElementById("accountMenuAvatar").src = user.picture;
-    } else {
-      accountAvatar.hidden = true;
-      accountInitial.hidden = false;
-      accountInitial.textContent = "👤";
-      document.getElementById("accountMenuAvatar").removeAttribute("src");
-    }
-
-    const displayName = user.name || user.email || "مستخدم GTXMOD";
-    document.getElementById("accountMenuName").textContent = displayName;
-    document.getElementById("accountMenuUsername").textContent =
-      user.username ? "@" + user.username : "لم يتم تعيين يوزر";
-
-    accountBtn.title = displayName;
-    googleLoginOpen.textContent = "👤 " + displayName;
-    googleLogout.style.display = "block";
-  } else {
-    accountAvatar.hidden = true;
-    accountAvatar.removeAttribute("src");
-    accountInitial.hidden = false;
-    accountInitial.textContent = "👤";
-    accountBtn.title = "تسجيل الدخول";
-    googleLoginOpen.textContent = "🔐 تسجيل دخول";
-    googleLogout.style.display = "none";
-    accountPanel.style.display = "none";
-  }
-}
-
-async function loadGoogleSession() {
-  try {
-    const r = await fetch("/api/google-session", {credentials:"same-origin"});
-    const data = await r.json();
-    if (r.ok && data.success && data.user) paintGoogleAccount(data.user);
-  } catch (e) { console.warn("Google session unavailable", e); }
-}
-loadGoogleSession();
-
-function showGoogleLogin() {
-  menuPanel.style.display = "none";
-  googleLoginBox.style.display = "flex";
-  const host = document.getElementById("googleButtonHost");
-  const msg = document.getElementById("googleLoginMessage");
-  host.innerHTML = "";
-  msg.textContent = "";
-  const clientId = document.querySelector('meta[name="google-client-id"]')?.content?.trim();
-  if (!clientId || clientId === "YOUR_GOOGLE_CLIENT_ID") {
-    msg.textContent = "يلزم إعداد Google Client ID للموقع أولاً.";
-    return;
-  }
-  const draw = () => {
     if (!window.google?.accounts?.id) {
       msg.textContent = "تعذر تحميل خدمة Google. حدّث الصفحة وحاول مجدداً.";
       return;
@@ -257,8 +195,6 @@ function showGoogleLogin() {
     }, 200);
   }
 }
-googleLoginOpen.onclick = showGoogleLogin;
-accountBtn.onclick = () => {
   if (gtxGoogleUser) {
     menuPanel.style.display = "none";
     accountPanel.style.display =
@@ -972,3 +908,21 @@ if (publishCategory) {
     }
   }, {passive:true});
 })();
+
+
+// ===== HIDE LOGIN BUTTON SAFELY =====
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        const btn = document.getElementById('googleLoginOpen');
+        if(btn) {
+            btn.style.display = 'none';
+            btn.remove(); // حذف نهائي من DOM
+        }
+        // إخفاء أي زر آخر يشبهه
+        document.querySelectorAll('[id*="login"], [class*="login"]').forEach(el => {
+             if(el.textContent.includes('دخول') || el.textContent.includes('Login')) {
+                 el.style.display = 'none';
+             }
+        });
+    }, 500);
+});
