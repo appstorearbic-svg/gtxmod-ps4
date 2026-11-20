@@ -664,32 +664,6 @@ grid.addEventListener("click", async e => {
   xhr.send();
 });
 
-// ===== TELEGRAM MOVING CREDIT =====
-const credit = document.createElement("a");
-credit.href = "https://t.me/h_y_88";
-credit.target = "_blank";
-credit.rel = "noopener";
-credit.innerHTML = "✈️ Telegram&nbsp; @h_y_88";
-credit.style.cssText = "position:fixed;z-index:9998;padding:8px 13px;background:#087ebc;color:white;border:1px solid #69caff;border-radius:22px;text-decoration:none;font-weight:bold;box-shadow:0 4px 18px #0009;transition:top 1s,left 1s,right 1s,bottom 1s";
-document.body.appendChild(credit);
-
-function moveTelegramCredit() {
-  const positions = [
-    {top:"12px",left:"12px",right:"auto",bottom:"auto"},
-    {top:"12px",left:"auto",right:"12px",bottom:"auto"},
-    {top:"50%",left:"12px",right:"auto",bottom:"auto"},
-    {top:"50%",left:"auto",right:"12px",bottom:"auto"},
-    {top:"auto",left:"12px",right:"auto",bottom:"12px"},
-    {top:"auto",left:"auto",right:"12px",bottom:"12px"}
-  ];
-  const p = positions[Math.floor(Math.random()*positions.length)];
-  Object.assign(credit.style,p);
-  credit.style.transform = "translateY(-50%)";
-  credit.style.direction = Math.random() > .5 ? "ltr" : "rtl";
-}
-moveTelegramCredit();
-setInterval(moveTelegramCredit,60000);
-
 // ===== CATEGORIES, FILTERS, LIKES & FAVORITES =====
 const GTX_LIKES_KEY = "gtxmod_likes_v1";
 const GTX_FAV_KEY = "gtxmod_favorites_v1";
@@ -799,7 +773,7 @@ document.getElementById("applyFilters").onclick = () => {
 
 // المفضلات داخل قائمة ☰
 const favoritesButton = document.createElement("button");
-favoritesButton.textContent = "❤️ المفضلات";
+favoritesButton.textContent = "⭐ المفضلات";
 favoritesButton.style.cssText = "width:100%;padding:13px;margin-top:9px;background:#8e2450;color:white;border:0;border-radius:9px;font-size:16px";
 menuPanel.appendChild(favoritesButton);
 favoritesButton.onclick = () => {
@@ -810,7 +784,7 @@ favoritesButton.onclick = () => {
     b.classList.toggle("active",b.dataset.category === "")
   );
   render();
-  document.querySelector(".section-heading h2").textContent = "❤️ منشوراتي المفضلة";
+  document.querySelector(".section-heading h2").textContent = "⭐ منشوراتي المفضلة";
   window.scrollTo({top:0,behavior:"smooth"});
 };
 
