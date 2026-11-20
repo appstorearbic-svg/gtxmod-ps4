@@ -1,4 +1,4 @@
-// GTXMOD — Publisher API (Link Based)
+// GTXMOD — Publisher API (Link + Image Support)
 export async function onRequestPost(context) {
     const { request, env } = context;
     
@@ -13,12 +13,13 @@ export async function onRequestPost(context) {
         const category = formData.get('category');
         const description = formData.get('description') || '';
         const size = formData.get('size') || 'Unknown';
+        const imageUrl = formData.get('imageUrl') || ''; // <-- رابط الصورة الجديدة
         
         if (!downloadUrl || !title || !category) {
-            return Response.json({ error: "Missing required fields (URL, Title, Category)" }, { status: 400 });
+            return Response.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        // 1. قراءة mods.json الحالي من GitHub
+        // قراءة mods.json
         const OWNER = "appstorearbic-svg";
         const REPO = "gtxmod-ps4";
         const FILE_PATH = "mods.json";
@@ -44,26 +45,25 @@ export async function onRequestPost(context) {
                 sha = data.sha;
             }
         } else if (getRes.status !== 404) {
-            throw new Error(`Failed to read mods.json: ${getRes.statusText}`);
+            throw new Error(`Failed to read mods.json`);
         }
 
-        // 2. إضافة المود الجديد
+        // إضافة المود
         const newMod = {
             id: Date.now().toString(),
             title: title,
             category: category,
             description: description,
-            url: downloadUrl, // <-- الرابط الخارجي مباشرة
-            image: "", // يمكن إضافته لاحقاً
+            url: downloadUrl,
+            image: imageUrl, // <-- حفظ رابط الصورة
             size: size,
             date: new Date().toISOString().split('T')[0]
         };
         
         currentMods.push(newMod);
 
-        // 3. تحديث الملف في GitHub
+        // تحديث GitHub
         const updateUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`;
-        
         const body = {
             message: `Publish mod via Web: ${title}`,
             content: btoa(JSON.stringify(currentMods, null, 2)),
@@ -81,15 +81,13 @@ export async function onRequestPost(context) {
         });
 
         if (putRes.ok) {
-            return Response.json({ success: true, message: "Mod published successfully!" });
+            return Response.json({ success: true });
         } else {
             const errData = await putRes.text();
-            console.error("GitHub Update Failed:", errData);
-            return Response.json({ error: "Failed to update GitHub repo", details: errData }, { status: 500 });
+            return Response.json({ error: "Update Failed", details: errData }, { status: 500 });
         }
 
     } catch (e) {
-        console.error(e);
         return Response.json({ error: e.message }, { status: 500 });
     }
 }
