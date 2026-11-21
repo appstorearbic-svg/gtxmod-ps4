@@ -1,79 +1,33 @@
-// GTXMOD — أكواد المنشورات الثابتة من قاعدة البيانات
+// GTXMOD — كود المنشور الثابت (من السيرفر لكل الزوار)
 (function(){
-  let codeMap=null;
-  let loading=false;
-  let timer=null;
-
-  function toast(msg){
-    let t=document.getElementById("gtx-toast-code-cb");
-    if(!t){
-      t=document.createElement("div");
-      t.id="gtx-toast-code-cb";
-      t.style.cssText="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:10px 20px;border-radius:8px;z-index:99999;font-weight:bold;direction:rtl";
-      document.body.appendChild(t);
-    }
-    t.textContent=msg;
-    t.style.opacity="1";
-    clearTimeout(t._timer);
-    t._timer=setTimeout(()=>t.style.opacity="0",2200);
-  }
-
-  function apply(){
-    if(!codeMap)return;
-    document.querySelectorAll(".mod-card[data-id],.post-card[data-id]").forEach(card=>{
-      if(card.querySelector(".gtx-below-code"))return;
-      const id=card.dataset.id;
-      const code=codeMap.static?.[id]||codeMap.community?.[id];
-      if(!code)return;
-
-      const badge=document.createElement("div");
-      badge.className="gtx-below-code";
-      badge.textContent=code;
-      badge.title="اضغط لنسخ كود المنشور";
-      badge.style.cssText="display:block;width:max-content;margin:5px auto 9px;background:#ef4444;color:#fff;font:900 13px monospace;padding:5px 13px;border-radius:6px;letter-spacing:1px;direction:ltr;cursor:pointer;box-shadow:0 2px 6px #ef444466";
-      badge.onclick=async e=>{
-        e.stopPropagation();
-        try{
-          await navigator.clipboard.writeText(code);
-          toast("تم نسخ الكود: "+code);
-        }catch(err){toast("الكود: "+code);}
-      };
-
-      const image=card.querySelector(".mod-image");
-      if(image) image.after(badge);
-      else card.prepend(badge);
-    });
-  }
-
-  async function loadCodes(){
-    if(loading)return;
-    loading=true;
-    try{
-      const r=await fetch("/api/mod-codes",{cache:"no-store"});
-      const d=await r.json();
-      if(r.ok&&d.success){
-        codeMap=d.codes||{};
-        apply();
-      }
-    }catch(e){
-      console.warn("GTXMOD codes unavailable",e);
-    }finally{loading=false;}
-  }
-
-  function check(){
-    const cards=[...document.querySelectorAll(".mod-card[data-id],.post-card[data-id]")];
-    const missing=cards.some(card=>!card.querySelector(".gtx-below-code")&&
-      !(codeMap?.static?.[card.dataset.id]||codeMap?.community?.[card.dataset.id]));
-    if(!codeMap||missing)loadCodes();
-    else apply();
-  }
-
-  window.addEventListener("load",()=>{
-    loadCodes();
-    const observer=new MutationObserver(()=>{
-      clearTimeout(timer);
-      timer=setTimeout(check,350);
-    });
-    observer.observe(document.body,{childList:true,subtree:true});
+ let map=null,busy=false,t=null;
+ function toast(m){let e=document.getElementById("gtxCodeToast");if(!e){e=document.createElement("div");e.id="gtxCodeToast";e.style.cssText="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 20px;border-radius:9px;z-index:99999;font-weight:bold;direction:rtl;transition:.3s";document.body.appendChild(e);}e.textContent=m;e.style.opacity="1";clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity="0",2000);}
+ function paint(){
+  if(!map)return;
+  document.querySelectorAll(".mod-card").forEach(card=>{
+   const id=card.dataset.id||card.querySelector(".gtx-like,.gtx-fav")?.dataset.id;
+   if(!id)return;
+   card.dataset.id=id;
+   const code=(map.static&&map.static[id])||(map.community&&map.community[id]);
+   if(!code)return;
+   let b=card.querySelector(".gtx-below-code");
+   if(b){if(b.textContent!==code)b.textContent=code;return;}
+   b=document.createElement("div");
+   b.className="gtx-below-code";b.textContent=code;b.title="اضغط لنسخ الكود";
+   b.style.cssText="display:block;width:max-content;margin:4px auto 8px;background:#ef4444;color:#fff;font:900 13px monospace;padding:4px 12px;border-radius:6px;letter-spacing:1px;direction:ltr;cursor:pointer;box-shadow:0 2px 6px #ef444466";
+   b.onclick=async ev=>{ev.stopPropagation();try{await navigator.clipboard.writeText(code);toast("تم نسخ الكود: "+code);}catch(x){toast("الكود: "+code);}};
+   const img=card.querySelector(".mod-image");
+   if(img)img.after(b);else card.prepend(b);
   });
+ }
+ async function load(){
+  if(busy)return;busy=true;
+  try{const r=await fetch("/api/mod-codes",{cache:"no-store"}),d=await r.json();if(r.ok&&d.success){map=d.codes||{};paint();}}catch(e){}
+  busy=false;
+ }
+ function tick(){clearTimeout(t);t=setTimeout(()=>{
+  const miss=[...document.querySelectorAll(".mod-card")].some(c=>!c.querySelector(".gtx-below-code"));
+  if(!map||miss)load();else paint();
+ },350);}
+ window.addEventListener("load",()=>{load();new MutationObserver(tick).observe(document.body,{childList:true,subtree:true});});
 })();

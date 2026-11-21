@@ -124,7 +124,26 @@ export async function onRequestPost({request,env}){
   const imageUrl=storageUrl(storage,ipath);
   const size="رابط خارجي";
   await env.DB.prepare("INSERT INTO user_mods (id,owner_sub,owner_name,name,category,description,image,thumb,download,size) VALUES (?,?,?,?,?,?,?,?,?,?)").bind(id,u.sub,u.name||"",name,category,description,imageUrl,thumb||"",downloadUrl,size).run();
+  try{await genModCode(env,id);}catch(e){}
   const r=await env.DB.prepare("SELECT * FROM user_mods WHERE id=?").bind(id).first();
   return Response.json({success:true,mod:rowToMod(r),message:"تم النشر! التحميل يصير متاح خلال دقيقة تقريباً."},{headers:H});
  }catch(e){return bad(e.message||"صار خطأ بالخادم.",500);}
+}
+
+// ===== كود ثابت فريد لكل منشور (2-7 أحرف، حساس لحالة الأحرف) =====
+async function genModCode(env,id){
+ await env.DB.prepare("CREATE TABLE IF NOT EXISTS mod_codes (code TEXT PRIMARY KEY COLLATE BINARY,post_key TEXT NOT NULL UNIQUE,source TEXT NOT NULL,post_id TEXT NOT NULL)").run();
+ const key="community:"+id;
+ const old=await env.DB.prepare("SELECT code FROM mod_codes WHERE post_key=?").bind(key).first();
+ if(old)return old.code;
+ const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+ for(let i=0;i<300;i++){
+  const b=new Uint8Array(8);crypto.getRandomValues(b);
+  const len=2+b[0]%6;let c="";
+  for(let j=0;j<len;j++)c+=chars[b[j+1]%chars.length];
+  await env.DB.prepare("INSERT OR IGNORE INTO mod_codes (code,post_key,source,post_id) VALUES (?,?,?,?)").bind(c,key,"community",id).run();
+  const f=await env.DB.prepare("SELECT code FROM mod_codes WHERE post_key=?").bind(key).first();
+  if(f)return f.code;
+ }
+ return null;
 }
