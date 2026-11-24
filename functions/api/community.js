@@ -14,8 +14,8 @@ async function getSession(request,env){
 }
 const H={"Cache-Control":"no-store"};
 const bad=(m,c)=>Response.json({success:false,message:m},{status:c,headers:H});
-const CATS=["سيارات","طيارات","موطورات","قوارب","شخصيات","مابات","سكربتات"];
-async function ensureTable(env){await env.DB.prepare("CREATE TABLE IF NOT EXISTS user_mods (id TEXT PRIMARY KEY,owner_sub TEXT NOT NULL,owner_name TEXT,name TEXT NOT NULL,category TEXT NOT NULL,description TEXT,image TEXT,thumb TEXT,download TEXT,size TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();}
+const CATS=["سيارات","طيارات","موطورات","قوارب","شخصيات","مابات","الاخرى"];
+async function ensureTable(env){await env.DB.prepare("CREATE TABLE IF NOT EXISTS user_mods (id TEXT PRIMARY KEY,owner_sub TEXT NOT NULL,owner_name TEXT,name TEXT NOT NULL,category TEXT NOT NULL,description TEXT,image TEXT,thumb TEXT,download TEXT,size TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();await env.DB.prepare("UPDATE user_mods SET category='الاخرى' WHERE category='سكربتات'").run();}
 const STORAGE_LIMIT_BYTES=5*1024*1024*1024;
 const SECONDARY_REPO="ALAM3ABOAT/GTXMOD-MODS";
 

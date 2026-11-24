@@ -360,7 +360,7 @@ adminPanel.innerHTML = `
 <option value="سيارات">سيارات</option>
 <option value="شخصيات">شخصيات</option>
 <option value="مابات">مابات</option>
-<option value="سكربتات">سكربتات</option>
+<option value="الاخرى">الاخرى</option>
 </select>
 <label>تفاصيل المود</label>
 <textarea name="description" placeholder="اكتب تفاصيل المود" style="width:100%;padding:12px;box-sizing:border-box;margin:7px 0"></textarea>
@@ -529,11 +529,11 @@ async function loadManagerMods() {
 async function editMod(mod) {
   const name = prompt("اسم المنشور:",mod.name);
   if (name === null) return;
-  const category = prompt("التصنيف: سيارات أو شخصيات أو مابات أو سكربتات",mod.category);
+  const category = prompt("التصنيف: سيارات أو شخصيات أو مابات أو الاخرى",mod.category);
   if (category === null) return;
   const description = prompt("وصف المنشور:",mod.description || "");
   if (description === null) return;
-  if (!["سيارات","شخصيات","مابات","سكربتات"].includes(category)) {
+  if (!["سيارات","شخصيات","مابات","الاخرى"].includes(category)) {
     alert("التصنيف غير صحيح");
     return;
   }
@@ -733,7 +733,7 @@ filterPanel.innerHTML = `
 <select id="filterType" style="width:100%;padding:12px;margin:8px 0">
 <option value="">الكل</option>
 <option>سيارات</option><option>طيارات</option><option>موطورات</option>
-<option>قوارب</option><option>شخصيات</option><option>مابات</option><option>سكربتات</option>
+<option>قوارب</option><option>شخصيات</option><option>مابات</option><option>الاخرى</option>
 </select>
 <label>حجم الملف</label>
 <select id="filterSize" style="width:100%;padding:12px;margin:8px 0">
@@ -899,7 +899,7 @@ grid.addEventListener("click",e => {
 });
 
 // تحديث خيارات التصنيف في لوحة النشر والإدارة
-const categoryOptions = ["سيارات","طيارات","موطورات","قوارب","شخصيات","مابات","سكربتات"];
+const categoryOptions = ["سيارات","طيارات","موطورات","قوارب","شخصيات","مابات","الاخرى"];
 const publishCategory = publishForm.querySelector('[name="category"]');
 if (publishCategory) {
   publishCategory.innerHTML = categoryOptions.map(c =>

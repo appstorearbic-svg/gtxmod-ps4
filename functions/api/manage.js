@@ -1,6 +1,6 @@
 const REPO = "appstorearbic-svg/gtxmod-ps4";
 const BRANCH = "main";
-const CATEGORIES = ["سيارات", "طيارات", "موطورات", "قوارب", "شخصيات", "مابات", "سكربتات"];
+const CATEGORIES = ["سيارات", "طيارات", "موطورات", "قوارب", "شخصيات", "مابات", "الاخرى"];
 
 function authorized(data, env) {
   return data.get("username") === env.ADMIN_USERNAME &&
