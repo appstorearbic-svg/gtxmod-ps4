@@ -1,4 +1,4 @@
-// GTXMOD — شارة NEW على المنشورات الجديدة (24 ساعة)
+// GTXMOD — شارة NEW الطائرة (24 ساعة)
 (function(){
 const DAY=864e5;
 const st=document.createElement("style");
@@ -10,13 +10,11 @@ function ts(m){if(m&&m.created){const t=Date.parse(String(m.created).replace(" "
 function paint(){let L=[];try{L=mods}catch(e){}
  document.querySelectorAll(".mod-card[data-id]").forEach(c=>{
   const m=L.find(x=>String(x.id)===c.dataset.id);
-  const box=c.querySelector(".mod-image")||c.querySelector(".gtx-media");
-  if(!box)return;
+  const box=c.querySelector(".mod-image")||c.querySelector(".gtx-media");if(!box)return;
   const t=ts(m),fresh=t>0&&(Date.now()-t)<DAY;
   let b=box.querySelector(".gtx-new");
   if(fresh&&!b){b=document.createElement("span");b.className="gtx-new";b.textContent="NEW";box.appendChild(b)}
-  if(!fresh&&b)b.remove();
- })}
+  if(!fresh&&b)b.remove()})}
 let t=null;function tick(){clearTimeout(t);t=setTimeout(paint,300)}
 window.addEventListener("load",()=>{paint();new MutationObserver(tick).observe(document.body,{childList:true,subtree:true})});
 })();

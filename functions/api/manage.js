@@ -91,7 +91,7 @@ export async function onRequestPost({request,env}) {
       return Response.json({success:false,message:"المنشور غير موجود"}, {status:404});
 
     if (action === "pin") {
-      mods[index].pinned = !mods[index].pinned;
+      mods[index].pinned = data.has("pinned") ? (String(data.get("pinned"))==="1") : !mods[index].pinned;
       await saveMods(env,mods,sha,"Pin mod: " + id);
       return Response.json({success:true,pinned:!!mods[index].pinned,message:mods[index].pinned?"📌 تم تثبيت المنشور":"تم إلغاء التثبيت"});
     }
