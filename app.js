@@ -817,6 +817,8 @@ render = function() {
   });
 
   shown.sort((a,b) => {
+    const pa=a.pinned?1:0,pb=b.pinned?1:0;
+    if(pa!==pb)return pb-pa;
     const diff = (Number(gtxLikes[b.id]) || 0) - (Number(gtxLikes[a.id]) || 0);
     return gtxSort === "high" ? diff : -diff;
   });

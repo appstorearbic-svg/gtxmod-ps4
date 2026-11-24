@@ -15,7 +15,7 @@ async function getSession(request,env){
 const H={"Cache-Control":"no-store"};
 const bad=(m,c)=>Response.json({success:false,message:m},{status:c,headers:H});
 const CATS=["سيارات","طيارات","موطورات","قوارب","شخصيات","مابات","الاخرى"];
-async function ensureTable(env){await env.DB.prepare("CREATE TABLE IF NOT EXISTS user_mods (id TEXT PRIMARY KEY,owner_sub TEXT NOT NULL,owner_name TEXT,name TEXT NOT NULL,category TEXT NOT NULL,description TEXT,image TEXT,thumb TEXT,download TEXT,size TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();await env.DB.prepare("UPDATE user_mods SET category='الاخرى' WHERE category='سكربتات'").run();try{await env.DB.prepare("ALTER TABLE user_mods ADD COLUMN spawn_names TEXT").run();}catch(e){}}
+async function ensureTable(env){await env.DB.prepare("CREATE TABLE IF NOT EXISTS user_mods (id TEXT PRIMARY KEY,owner_sub TEXT NOT NULL,owner_name TEXT,name TEXT NOT NULL,category TEXT NOT NULL,description TEXT,image TEXT,thumb TEXT,download TEXT,size TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();try{await env.DB.prepare("ALTER TABLE user_mods ADD COLUMN pinned INTEGER DEFAULT 0").run();}catch(e){}await env.DB.prepare("UPDATE user_mods SET category='الاخرى' WHERE category='سكربتات'").run();try{await env.DB.prepare("ALTER TABLE user_mods ADD COLUMN spawn_names TEXT").run();}catch(e){}}
 const STORAGE_LIMIT_BYTES=5*1024*1024*1024;
 const SECONDARY_REPO="ALAM3ABOAT/GTXMOD-MODS";
 
@@ -70,7 +70,7 @@ function storageUrl(storage,path){
   :path;
 }
 function parseSpawn(v){try{const a=JSON.parse(v||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
-function rowToMod(r){return{spawn:parseSpawn(r.spawn_names),id:r.id,name:r.name,category:r.category,description:r.description||"",image:r.thumb||r.image||"",cover:r.image||"",download:r.download||"",size:r.size||"",owner:r.odm||r.owner_name||"",ownerAvatar:r.oav||"",ownerUsername:r.oun||"",date:(r.created_at||"").slice(0,10),fileType:"ZIP"};}
+function rowToMod(r){return{pinned:!!r.pinned,created:r.created_at||"",spawn:parseSpawn(r.spawn_names),id:r.id,name:r.name,category:r.category,description:r.description||"",image:r.thumb||r.image||"",cover:r.image||"",download:r.download||"",size:r.size||"",owner:r.odm||r.owner_name||"",ownerAvatar:r.oav||"",ownerUsername:r.oun||"",date:(r.created_at||"").slice(0,10),fileType:"ZIP"};}
 export async function onRequestGet({request,env}){
  try{
   if(!env.DB)return bad("قاعدة البيانات غير مربوطة.",503);
@@ -78,10 +78,10 @@ export async function onRequestGet({request,env}){
   if(new URL(request.url).searchParams.get("mine")==="1"){
    const u=await getSession(request,env);
    if(!u)return bad("سجل دخول أولاً.",401);
-   const rs=await env.DB.prepare("SELECT m.*, u.avatar_url AS oav, u.username AS oun, u.display_name AS odm FROM user_mods m LEFT JOIN users u ON u.google_sub=m.owner_sub WHERE m.owner_sub=? ORDER BY m.created_at DESC").bind(u.sub).all();
+   const rs=await env.DB.prepare("SELECT m.*, u.avatar_url AS oav, u.username AS oun, u.display_name AS odm FROM user_mods m LEFT JOIN users u ON u.google_sub=m.owner_sub WHERE m.owner_sub=? ORDER BY m.pinned DESC, m.created_at DESC").bind(u.sub).all();
    return Response.json({success:true,mods:(rs.results||[]).map(rowToMod)},{headers:H});
   }
-  const rs=await env.DB.prepare("SELECT m.*, u.avatar_url AS oav, u.username AS oun, u.display_name AS odm FROM user_mods m LEFT JOIN users u ON u.google_sub=m.owner_sub ORDER BY m.created_at DESC LIMIT 200").all();
+  const rs=await env.DB.prepare("SELECT m.*, u.avatar_url AS oav, u.username AS oun, u.display_name AS odm FROM user_mods m LEFT JOIN users u ON u.google_sub=m.owner_sub ORDER BY m.pinned DESC, m.created_at DESC LIMIT 200").all();
   return Response.json({success:true,mods:(rs.results||[]).map(rowToMod)},{headers:H});
  }catch(e){return bad("صار خطأ بالخادم.",500);}
 }
@@ -115,6 +115,7 @@ export async function onRequestPost({request,env}){
   let downloadUrl;
   try{const parsed=new URL(download);if(!["http:","https:"].includes(parsed.protocol))throw new Error();downloadUrl=parsed.href;}
   catch(e){return bad("رابط التحميل غير صالح. استخدم رابط http أو https.",400);}
+  if(!/(^|\.)mediafire\.com$/i.test(new URL(downloadUrl).hostname))return bad("❌ خطأ: هذا ليس رابط ميديا فاير. النشر مسموح فقط بروابط MediaFire.",400);
   if(thumb&&(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(thumb)||thumb.length>300000))return bad("صورة المعاينة غير صالحة.",400);
   let spawn=[];try{spawn=JSON.parse(String(f.get("spawn")||"[]"))}catch(e){}
   spawn=(Array.isArray(spawn)?spawn:[]).map(x=>String(x||"").trim().slice(0,24)).filter(Boolean).slice(0,15);

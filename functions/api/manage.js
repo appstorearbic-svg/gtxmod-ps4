@@ -90,6 +90,12 @@ export async function onRequestPost({request,env}) {
     if (index < 0)
       return Response.json({success:false,message:"المنشور غير موجود"}, {status:404});
 
+    if (action === "pin") {
+      mods[index].pinned = !mods[index].pinned;
+      await saveMods(env,mods,sha,"Pin mod: " + id);
+      return Response.json({success:true,pinned:!!mods[index].pinned,message:mods[index].pinned?"📌 تم تثبيت المنشور":"تم إلغاء التثبيت"});
+    }
+
     if (action === "delete") {
       mods.splice(index,1);
       await saveMods(env,mods,sha,"Delete mod: " + id);

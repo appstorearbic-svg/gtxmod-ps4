@@ -14,6 +14,7 @@ export async function onRequestPost(context) {
         const description = formData.get('description') || '';
         const size = formData.get('size') || 'Unknown';
         const imageUrl = formData.get('imageUrl') || ''; // <-- رابط الصورة الجديدة
+        try{const h=new URL(downloadUrl).hostname;if(!/(^|\.)mediafire\.com$/i.test(h))return Response.json({error:"❌ خطأ: هذا ليس رابط ميديا فاير"},{status:400});}catch(e){return Response.json({error:"رابط غير صالح"},{status:400});}
         
         if (!downloadUrl || !title || !category) {
             return Response.json({ error: "Missing required fields" }, { status: 400 });
