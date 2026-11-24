@@ -83,7 +83,7 @@ export async function onRequestPost({request,env}){
    const userMB=ms.reduce((a,m)=>a+MB(m.size),0);
    const accounts=(await env.DB.prepare("SELECT COUNT(*) c FROM users").first()).c||0;
    const limitKB=1048576,freeKB=Math.max(0,limitKB-repoKB),totalMB=adminMB+userMB,cnt=ms.length+adminCount,avg=cnt?totalMB/cnt:15;
-   return J({success:true,storage:{repoKB,limitKB,freeKB,pct:Math.min(100,repoKB/limitKB*100),files,adminCount,adminMB:+adminMB.toFixed(1),userCount:ms.length,userMB:+userMB.toFixed(1),totalMB:+totalMB.toFixed(1),accounts,avgMB:+avgMB(avg),slots:Math.floor(freeKB/1024/Math.max(1,avg)),repo}});
+   return J({success:true,storage:{repoKB,limitKB,freeKB,pct:Math.min(100,repoKB/limitKB*100),files,adminCount,adminMB:+adminMB.toFixed(1),userCount:ms.length,userMB:+userMB.toFixed(1),totalMB:+totalMB.toFixed(1),accounts,avgMB:+avg.toFixed(1),slots:Math.floor(freeKB/1024/Math.max(1,avg)),repo}});
   }
   if(action==="deletePost"){
    const m=await env.DB.prepare("SELECT * FROM user_mods WHERE id=?").bind(String(b.id||"")).first();
@@ -132,4 +132,3 @@ export async function onRequestPost({request,env}){
   return J({success:false,message:"أمر غير معروف."},400);
  }catch(e){return J({success:false,message:e.message||"صار خطأ بالخادم."},500);}
 }
-function avgMB(v){return Number(v).toFixed(1);}
