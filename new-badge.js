@@ -1,9 +1,10 @@
-// GTXMOD — شارة NEW الطائرة (24 ساعة)
+// GTXMOD — شارة NEW ذهبية بضوء نابض (24 ساعة)
 (function(){
 const DAY=864e5;
 const st=document.createElement("style");
 st.textContent=`@keyframes gtxFloatNew{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
-.gtx-new{position:absolute;top:8px;left:8px;z-index:6;background:#1d4ed8;color:#ef4444;font:900 12px/1 system-ui;padding:5px 9px;border-radius:7px;letter-spacing:1px;box-shadow:0 4px 12px #1d4ed866;animation:gtxFloatNew 2.2s ease-in-out infinite;pointer-events:none;direction:ltr}`;
+@keyframes gtxGlowNew{0%,100%{box-shadow:0 0 4px #fbbf2455,0 0 9px #f59e0b33,0 2px 6px #0007}50%{box-shadow:0 0 14px #fbbf24ff,0 0 28px #f59e0bdd,0 0 46px #d9770699,0 2px 6px #0007}}
+.gtx-new{position:absolute;top:8px;left:8px;z-index:6;background:linear-gradient(135deg,#d97706,#fbbf24 45%,#f59e0b);color:#fff;font:900 12px/1 system-ui;padding:5px 9px;border-radius:7px;letter-spacing:1px;text-shadow:0 1px 3px #00000066;animation:gtxFloatNew 2.2s ease-in-out infinite,gtxGlowNew 2.2s ease-in-out infinite;pointer-events:none;direction:ltr}`;
 document.head.appendChild(st);
 function ts(m){if(m&&m.created){const t=Date.parse(String(m.created).replace(" ","T")+"Z");if(!isNaN(t))return t}
  if(m&&m.date){const t=Date.parse(m.date+"T00:00:00");if(!isNaN(t))return t}return 0}
