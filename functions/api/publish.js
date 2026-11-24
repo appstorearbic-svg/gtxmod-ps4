@@ -53,7 +53,8 @@ export async function onRequestPost(context) {
             id: Date.now().toString(),
             title: title,
             category: category,
-            description: description,
+            description: "",
+            spawn: (()=>{try{const a=JSON.parse(String(formData.get("spawn")||"[]"));return Array.isArray(a)?a.map(x=>String(x||"").trim().slice(0,24)).filter(Boolean).slice(0,15):[]}catch(e){return[]}})(),
             url: downloadUrl,
             image: imageUrl, // <-- حفظ رابط الصورة
             size: size,

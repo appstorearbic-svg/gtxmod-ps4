@@ -108,7 +108,8 @@ export async function onRequestPost({request,env}) {
 
     mod.name = name;
     mod.category = category;
-    mod.description = description;
+    mod.description = "";
+    try{const sp=JSON.parse(String(data.get("spawn")||"[]"));if(Array.isArray(sp))mod.spawn=sp.map(x=>String(x||"").trim().slice(0,24)).filter(Boolean).slice(0,15);}catch(e){}
 
     const image = data.get("image");
     const zip = data.get("zip");
