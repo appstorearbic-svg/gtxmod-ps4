@@ -73,7 +73,7 @@
                     msg.textContent="رمز غير صحيح أو منتهي."; msg.style.color="#ef4444";
                 }
             } catch(e) {
-                msg.textContent="خطأ في الاتصال، تحقق من الإنترنت."; msg.style.color="#ef4444";
+                msg.textContent="خطأ في الاتصال."; msg.style.color="#ef4444";
             }
         };
 

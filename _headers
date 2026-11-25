@@ -1,0 +1,4 @@
+/index.html
+  Cache-Control: no-store, must-revalidate
+/guard.js
+  Cache-Control: no-store, must-revalidate
