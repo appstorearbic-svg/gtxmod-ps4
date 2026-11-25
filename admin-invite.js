@@ -1,64 +1,38 @@
-// GTXMOD — تبويب الدعوات في لوحة المدير
+// GTXMOD — خانة رموز الدعوة داخل لوحة المدير (توليد/نسخ/فحص من السيرفر)
 (function(){
-    const observer=new MutationObserver(()=>{
-        const tabsNav=document.querySelector(".as-tabs");
-        if(!tabsNav || document.getElementById("gtxInviteTab")) return;
-        
-        // إضافة الزر
-        const btn=document.createElement("button");
-        btn.className="as-tab";
-        btn.dataset.t="invite";
-        btn.innerHTML="🔑 دعوات";
-        btn.id="gtxInviteTab";
-        tabsNav.appendChild(btn);
-        
-        // إضافة القسم
-        const viewsContainer=document.querySelector(".as-main");
-        if(viewsContainer && !document.getElementById("asInviteView")){
-            const sec=document.createElement("section");
-            sec.className="as-view";
-            sec.id="asInviteView";
-            sec.hidden=true;
-            sec.innerHTML=`
-             <div class="as-box live">
-              <div class="as-bt">توليد رمز دعوة</div>
-              <button class="as-btn" id="genInvBtn" style="margin-top:10px">✨ توليد</button>
-              <div id="invResult" style="margin-top:15px;display:none;text-align:center">
-               <div style="font-size:20px;font-weight:bold;color:#38bdf8;background:#071a30;padding:10px;border-radius:8px;border:1px dashed #38bdf8" id="invCodeDisp"></div>
-               <button class="as-ghost" onclick="navigator.clipboard.writeText(document.getElementById('invCodeDisp').textContent)" style="margin-top:10px">نسخ</button>
-              </div>
-             </div>
-            `;
-            viewsContainer.appendChild(sec);
-            
-            btn.onclick=()=>{
-                document.querySelectorAll(".as-view").forEach(v=>v.hidden=true);
-                sec.hidden=false;
-                document.querySelectorAll(".as-tab").forEach(t=>t.classList.remove("on"));
-                btn.classList.add("on");
-            };
-            
-            sec.querySelector("#genInvBtn").onclick=()=>{
-                // نستدعي دالة التوليد من guard.js عبر window إذا أمكن، أو نعيد تعريفها هنا للبساطة
-                const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-                try {
-    const res = await fetch("/api/invite", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ownerSub: "admin"})
-    });
-    const data = await res.json();
-    if (data.success) {
-        const disp = sec.querySelector("#invCodeDisp");
-        if(disp) disp.textContent = data.code;
-        return;
-    }
-} catch(e) { console.error("Invite API Error:", e); }
-                
-                sec.querySelector("#invResult").style.display="block";
-                sec.querySelector("#invCodeDisp").textContent=code;
-            };
-        }
-    });
-    observer.observe(document.body,{childList:true,subtree:true});
+const API="/api/invite";
+function modal(){
+  let m=document.getElementById("gtxInvAdmin");
+  if(m) return m;
+  m=document.createElement("div");m.id="gtxInvAdmin";
+  m.style.cssText="position:fixed;inset:0;background:#000c;z-index:10070;display:none;align-items:center;justify-content:center;padding:16px;direction:rtl";
+  m.innerHTML='<div style="background:#0f172a;border:1px solid #2874bd;border-radius:16px;max-width:360px;width:100%;padding:18px;color:#fff"><div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><b style="color:#60a5fa;font-size:16px">🔑 رموز الدعوة</b><button id="giaClose" style="margin-inline-start:auto;background:#2a1119;border:1px solid #7f1d1d;color:#f87171;border-radius:50%;width:34px;height:34px">✕</button></div><button id="giaGen" style="width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(90deg,#087bd0,#2563eb);color:#fff;font-weight:800;font-size:15px">➕ توليد رمز جديد</button><div id="giaCode" style="margin-top:12px;text-align:center;font-family:monospace;font-size:24px;letter-spacing:3px;color:#34d399;background:#071327;border:1px dashed #1e3a5f;border-radius:10px;padding:12px;display:none"></div><button id="giaCopy" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;background:#052e1c;border:1px solid #14532d;color:#34d399;font-weight:700;display:none">📋 نسخ الرمز</button><p id="giaMsg" style="font-size:12px;color:#94a3b8;margin-top:8px;min-height:16px"></p><hr style="border:0;border-top:1px solid #1e3a5f;margin:12px 0"><input id="giaCheck" placeholder="فحص رمز موجود" maxlength="8" style="width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#020617;color:#fff;text-align:center;font-family:monospace;letter-spacing:2px"><button id="giaCheckBtn" style="width:100%;margin-top:8px;padding:10px;border:0;border-radius:10px;background:#1e3a5f;color:#cfe3ff;font-weight:700">🔍 فحص</button></div>';
+  document.body.appendChild(m);
+  m.querySelector("#giaClose").onclick=()=>m.style.display="none";
+  m.onclick=e=>{if(e.target===m)m.style.display="none";};
+  m.querySelector("#giaGen").onclick=async()=>{
+    const msg=m.querySelector("#giaMsg");msg.textContent="جاري التوليد...";
+    try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ownerSub:"admin"})});
+    const d=await r.json();
+    if(d.success){const c=m.querySelector("#giaCode");c.textContent=d.code;c.style.display="block";m.querySelector("#giaCopy").style.display="block";msg.textContent="✅ رمز صالح لمدة 7 أيام";}
+    else msg.textContent="❌ "+(d.message||"فشل");}catch(e){msg.textContent="❌ خطأ اتصال";}
+  };
+  m.querySelector("#giaCopy").onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(m.querySelector("#giaCode").textContent);m.querySelector("#giaMsg").textContent="✅ اننسخ الرمز";};
+  m.querySelector("#giaCheckBtn").onclick=async()=>{
+    const code=m.querySelector("#giaCheck").value.trim().toUpperCase();const msg=m.querySelector("#giaMsg");
+    if(code.length<8){msg.textContent="الرمز قصير";return;}
+    try{const r=await fetch(API+"?code="+encodeURIComponent(code));const d=await r.json();msg.textContent=d.valid?"✅ رمز صالح":"❌ غير صالح أو منتهي";}catch(e){msg.textContent="❌ خطأ اتصال";}
+  };
+  return m;
+}
+function inject(){
+  if(document.getElementById("giaTabBtn")) return;
+  const tab=document.querySelector("[data-t]"); if(!tab||!tab.parentElement) return;
+  const b=document.createElement("button");b.id="giaTabBtn";b.textContent="🔑 رموز الدعوة";
+  b.style.cssText="padding:8px 12px;border:0;border-radius:8px;background:#1e3a5f;color:#cfe3ff;font-weight:700;margin:2px";
+  b.onclick=()=>{modal().style.display="flex";};
+  tab.parentElement.appendChild(b);
+}
+setInterval(inject,800);
+new MutationObserver(inject).observe(document.body,{childList:true,subtree:true});
 })();
