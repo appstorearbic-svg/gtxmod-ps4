@@ -110,7 +110,9 @@ fetch('./mods.json')
 
 document.querySelectorAll('.category').forEach(btn => {
   btn.onclick = () => {
-    selected = btn.dataset.category;
+    selected = btn.dataset.category; gtxFavoritesOnly=false; gtxType="";
+    document.querySelector(".section-heading h2").textContent="🔥 أحدث المنشورات";
+    setTimeout(()=>{try{render()}catch(e){}},250);
 
     document.querySelectorAll('.category').forEach(x =>
       x.classList.toggle('active', x === btn)
@@ -846,11 +848,11 @@ render = function() {
   empty.classList.toggle("hidden",shown.length > 0);
   allBack.style.display = gtxFavoritesOnly ? "inline-block" : "none";
 
-  grid.innerHTML = shown.map(m => {
+  grid.innerHTML = shown.map(m => {try{
     const liked = !!gtxLikes["liked_" + m.id];
     const likes = Number(gtxLikes[m.id]) || 0;
     return `
-    <article class="mod-card" data-id="${esc(m.id)}">${window.gtxOwnerBar?window.gtxOwnerBar(m):""}
+    <article class="mod-card" data-id="${esc(m.id)}">${(()=>{try{return window.gtxOwnerBar?window.gtxOwnerBar(m):""}catch(e){return ""}})()}
       <div class="mod-image gtx-media" data-media="0"
            style="position:relative;overflow:hidden;touch-action:pan-y">
         <img class="gtx-media-image" src="${safeUrl(m.image)}"
@@ -888,7 +890,7 @@ render = function() {
         </div>
       </div>
     </article>`;
-  }).join("");
+  }catch(e){console.error("card skip:",e);return ""}}).join("");
 };
 
 // النقر على القلب والمفضلات
