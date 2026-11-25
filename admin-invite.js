@@ -41,11 +41,19 @@
             sec.querySelector("#genInvBtn").onclick=()=>{
                 // نستدعي دالة التوليد من guard.js عبر window إذا أمكن، أو نعيد تعريفها هنا للبساطة
                 const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-                let code="";for(let i=0;i<8;i++)code+=chars[Math.floor(Math.random()*chars.length)];
-                
-                const list=JSON.parse(localStorage.getItem("gtx_invites_v1")||"[]");
-                list.push({code, exp:Date.now()+10*60*1000, used:false});
-                localStorage.setItem("gtx_invites_v1",JSON.stringify(list));
+                try {
+    const res = await fetch("/api/invite", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ownerSub: "admin"})
+    });
+    const data = await res.json();
+    if (data.success) {
+        const disp = sec.querySelector("#invCodeDisp");
+        if(disp) disp.textContent = data.code;
+        return;
+    }
+} catch(e) { console.error("Invite API Error:", e); }
                 
                 sec.querySelector("#invResult").style.display="block";
                 sec.querySelector("#invCodeDisp").textContent=code;

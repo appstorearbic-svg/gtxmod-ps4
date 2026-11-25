@@ -1,6 +1,6 @@
 // GTXMOD — حارس الدخول الآمن (فحص خادمي + اعتراض نقرة)
 (function(){
-    const LS_INVITES = "gtx_invites_v1";
+    // التحقق الآن يتم عبر السيرفر API
     const LS_PENDING = "gtx_pending_code";
     let isCheckingSession = false; // لمنع تكرار الطلبات أثناء النقر
 
