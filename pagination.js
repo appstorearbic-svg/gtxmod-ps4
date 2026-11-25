@@ -34,7 +34,7 @@ function apply(){
  const from=(page-1)*PER,to=from+PER;
  cards.forEach((c,i)=>{c.style.display=(i>=from&&i<to)?"":"none"});
  if(page>pages){empty.textContent="لا توجد منشورات بهذا الرقم.";empty.classList.remove("hidden")}
- else{empty.textContent="ماكو منشورات بهذا التصنيف حالياً.";empty.classList.add("hidden")}
+ else{empty.textContent="لا يوجد مودات";empty.classList.add("hidden")}
  bar.style.display="flex";draw(pages);
 }
 const base=window.render;

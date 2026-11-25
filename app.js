@@ -828,7 +828,7 @@ allBack.onclick = () => {
 
 // إعادة بناء عرض المنشورات مع القلوب والتصفية
 render = function() {
-  let shown = mods.filter(m => {
+  let shown = mods.filter(m => { if(window.gtxSearch && !window.gtxMatch(m))return false;
     if (selected && m.category !== selected) return false;
     if (gtxType && m.category !== gtxType) return false;
     if (gtxFavoritesOnly && !gtxFavorites[m.id]) return false;
