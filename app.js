@@ -1,3 +1,22 @@
+
+// --- دالة مزامنة اللايك مع المفضلة ---
+async function syncLikeAndFav(postId, isNowLiked) {
+    try {
+        // 1. تحديث حالة اللايك
+        await fetch('/api/like', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ postId, action: isNowLiked ? 'like' : 'unlike' })
+        });
+        // 2. تحديث حالة المفضلة (نفس منطق اللايك)
+        await fetch('/api/favorites', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ postId, action: isNowLiked ? 'add' : 'remove' })
+        });
+    } catch(e) { console.error("خطأ في المزامنة:", e); }
+}
+
 const grid = document.getElementById('modGrid');
 const empty = document.getElementById('emptyState');
 const count = document.getElementById('resultCount');
@@ -864,9 +883,7 @@ render = function() {
           <button class="gtx-like" data-id="${esc(m.id)}" style="padding:9px 13px;border:0;border-radius:8px;background:${liked ? "#a51d48" : "#243c59"};color:white">
             ${liked ? "❤️" : "🤍"} ${likes}
           </button>
-          <button class="gtx-fav" data-id="${esc(m.id)}" style="padding:9px 13px;border:0;border-radius:8px;background:#243c59;color:white">
-            ${gtxFavorites[m.id] ? "⭐ محفوظ بالمفضلات" : "☆ أضف للمفضلات"}
-          </button>
+          
           <a class="download" href="${safeUrl(m.download)}" download>⬇ تحميل المود</a>
         </div>
       </div>
