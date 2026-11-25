@@ -12,7 +12,7 @@ st.textContent=`#gtxIst{position:fixed;inset:0;z-index:10060;display:none;align-
 .gtx-ist-t{font-size:15px;font-weight:800;color:#60a5fa}
 .gtx-ist-x{margin-inline-start:auto;width:40px;height:40px;border-radius:50%;background:#2a1119;border:1px solid #7f1d1d;color:#f87171;font-size:18px}
 .gtx-ist-body{background:#071327;min-height:320px}
-.gtx-ist-body iframe{width:100%;height:360px;border:0;display:block}
+.gtx-ist-body iframe{width:100%;height:400px;border:0;display:block}
 .gtx-ist-foot{padding:12px 14px}
 .gtx-ist-go{width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(90deg,#087bd0,#2563eb);color:#fff;font-size:15px;font-weight:800}`;
 document.head.appendChild(st);
