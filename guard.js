@@ -2,6 +2,7 @@
 (function(){
     // التحقق الآن يتم عبر السيرفر API
     const LS_PENDING = "gtx_pending_code";
+    const LS_INVITES = "gtx_invites_v1";
     let isCheckingSession = false; // لمنع تكرار الطلبات أثناء النقر
 
     // --- أدوات الرموز ---
@@ -57,38 +58,25 @@
         
         inp.focus();
         
-        btn.onclick=()=>{
-            const code=inp.value.trim().toUpperCase();
-            if(code.length<8) { msg.textContent="الرمز قصير."; return; }
-            
-            if(checkAndUse(code)) {
-                localStorage.setItem(LS_PENDING, code);
-                m.remove();
-                // فتح جوجل بعد لحظة
-                setTimeout(()=>{
-                    const gBtn=document.getElementById("googleLoginOpen");
-                    if(gBtn) gBtn.click();
-                }, 100);
-            } else {
-                // --- NEW SERVER CHECK ---
+        btn.onclick = async () => {
+            const code = inp.value.trim().toUpperCase();
+            if(code.length < 8) { msg.textContent="الرمز قصير."; return; }
+            msg.textContent="جاري التحقق..."; msg.style.color="#94a3b8";
             try {
                 const res = await fetch(`/api/invite?code=${encodeURIComponent(code)}`);
                 const data = await res.json();
-                if (!data || !data.valid) {
-                    msg.textContent="رمز غير صحيح أو منتهي.";
-                    msg.style.display = "block";
-                    return false;
+                if (data && data.valid) {
+                    localStorage.setItem(LS_PENDING, code);
+                    m.remove();
+                    setTimeout(()=>{ const g=document.getElementById("googleLoginOpen"); if(g) g.click(); },100);
+                } else {
+                    msg.textContent="رمز غير صحيح أو منتهي."; msg.style.color="#ef4444";
                 }
-                msg.style.display = "none";
             } catch(e) {
-                msg.textContent = "خطأ في الاتصال";
-                msg.style.display = "block";
-                return false;
-            }
-            // --- END ---
+                msg.textContent="خطأ في الاتصال، تحقق من الإنترنت."; msg.style.color="#ef4444";
             }
         };
-        
+
         cls.onclick=()=>m.remove();
         m.onclick=e=>{if(e.target===m)m.remove();};
     }
