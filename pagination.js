@@ -38,6 +38,6 @@ function apply(){
  bar.style.display="flex";draw(pages);
 }
 const base=window.render;
-if(typeof base==="function")window.render=function(){const r=base.apply(this,arguments);apply();return r};
+if(typeof base==="function")window.render=function(){const r=base.apply(this,arguments);apply();try{localStorage.setItem("gtx_mods_cache",JSON.stringify(mods))}catch(e){}return r};
 window.addEventListener("load",apply);
 })();

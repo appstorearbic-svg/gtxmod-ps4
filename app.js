@@ -33,6 +33,7 @@ const safeUrl = s => {
   const v = String(s || '');
   return /^(https?:\/\/|assets\/|\.\/|data:image\/)/i.test(v) ? esc(v) : '#';
 };
+try{const _c=JSON.parse(localStorage.getItem("gtx_mods_cache")||"null");if(Array.isArray(_c)&&_c.length){mods=_c;render();}}catch(e){}
 
 function render() {
   const shown = mods.filter(m =>
