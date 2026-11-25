@@ -37,4 +37,5 @@ document.addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&e.target&&e.target.id==="pgJump")setTimeout(refresh,300);
 });
+window.addEventListener("pageshow",()=>{count=0;last=0;});
 })();
