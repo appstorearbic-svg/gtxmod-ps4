@@ -70,7 +70,22 @@
                     if(gBtn) gBtn.click();
                 }, 100);
             } else {
-                msg.textContent="رمز غير صحيح أو منتهي.";
+                // --- NEW SERVER CHECK ---
+            try {
+                const res = await fetch(`/api/invite?code=${encodeURIComponent(code)}`);
+                const data = await res.json();
+                if (!data || !data.valid) {
+                    msg.textContent="رمز غير صحيح أو منتهي.";
+                    msg.style.display = "block";
+                    return false;
+                }
+                msg.style.display = "none";
+            } catch(e) {
+                msg.textContent = "خطأ في الاتصال";
+                msg.style.display = "block";
+                return false;
+            }
+            // --- END ---
             }
         };
         
