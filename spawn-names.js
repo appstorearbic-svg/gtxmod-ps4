@@ -53,7 +53,7 @@ const xs=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.send=function(b)
 const of=window.fetch;window.fetch=function(u,o){if(o&&o.body)attach(o.body);return of.apply(this,arguments)};
 function cards(){let L=[];try{L=mods}catch(e){}
  document.querySelectorAll(".mod-card[data-id]").forEach(c=>{
-  const fav=c.querySelector(".gtx-fav");if(!fav)return;
+  const fav=(c.querySelector(".gtx-like")||c.querySelector(".gtx-fav"));if(!fav)return;
   const m=L.find(x=>String(x.id)===c.dataset.id),ns=m&&Array.isArray(m.spawn)?m.spawn.filter(Boolean):[],has=c.querySelector(".sn-btn");
   if(!ns.length){if(has)has.remove();return}
   if(has)return;
