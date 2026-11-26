@@ -1,6 +1,6 @@
 // GTXMOD — اسماء الاستدعاء (بديل وصف المود)
 (function(){
-const MAX=15,LEN=24,E=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const MAX=25,LEN=24,E=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const st=document.createElement("style");st.textContent=`.mod-desc{display:none!important}
 .sn-wrap{margin:6px 0 12px}.sn-lab{display:block;color:#8bbce8;font-size:13px;margin-bottom:6px}
 .sn-sel{width:100%;padding:11px;background:#071a30;border:1px solid #1e406e;border-radius:10px;color:#fff;font-family:inherit}

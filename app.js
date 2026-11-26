@@ -854,7 +854,7 @@ render = function() {
     const likes = Number(gtxLikes[m.id]) || 0;
     return `
     <article class="mod-card" data-id="${esc(m.id)}">${(()=>{try{return window.gtxOwnerBar?window.gtxOwnerBar(m):""}catch(e){return ""}})()}
-      <div class="mod-image gtx-media" data-media="0"
+      <div class="mod-image gtx-media" data-media="0" data-images="${esc(JSON.stringify(m.images&&m.images.length?m.images:[m.image]))}"
            style="position:relative;overflow:hidden;touch-action:pan-y">
         <img class="gtx-media-image" src="${safeUrl(m.image)}"
              alt="${esc(m.name)}" loading="lazy"
