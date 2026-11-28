@@ -29,7 +29,6 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '"':'&quot;', "'":'&#39;'
 }[c]));
 
-const isViking = u => /(^|\.)vikingfile\.com$|(^|\.)vik1ngfile\.site$/i.test((()=>{try{return new URL(String(u||"")).hostname}catch(e){return ""}})());
 const safeUrl = s => {
   const v = String(s || '');
   return /^(https?:\/\/|assets\/|\.\/|data:image\/)/i.test(v) ? esc(v) : '#';
@@ -645,7 +644,6 @@ document.getElementById("adminLoginBtn").onclick = async () => {
 // ===== DOWNLOAD PROGRESS =====
 grid.addEventListener("click", async e => {
   const link = e.target.closest("a.download");
-  if(link && isViking(link.href)) return; // VikingFile: افتح الصفحة مباشرة
   if (!link) return;
   e.preventDefault();
   const url = link.href;
@@ -889,7 +887,7 @@ render = function() {
             ${liked ? "❤️" : "🤍"} ${likes}
           </button>
           
-          <a class="download" href="${safeUrl(m.download)}" ${isViking(m.download)?'target="_blank" rel="noopener noreferrer"':'download'}>⬇ تحميل المود</a>
+          <a class="download" href="${safeUrl(m.download)}" download>⬇ تحميل المود</a>
         </div>
       </div>
     </article>`;
