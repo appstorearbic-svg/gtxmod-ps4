@@ -1,7 +1,7 @@
 // GTXMOD — النشر مقصور على روابط MediaFire
 (function(){
-const MSG="❌ خطأ: هذا ليس رابط ميديا فاير. النشر مسموح فقط بروابط MediaFire.";
-const ok=v=>{try{const u=new URL(String(v||"").trim());return /^https?:$/.test(u.protocol)&&/(^|\.)mediafire\.com$/i.test(u.hostname)}catch(e){return false}};
+const MSG="❌ خطأ: النشر مسموح فقط بروابط MediaFire أو VikingFile.";
+const ok=v=>{try{const u=new URL(String(v||"").trim());return /^https?:$/.test(u.protocol)&&/(^|\.)mediafire\.com$|(^|\.)vikingfile\.com$|(^|\.)vik1ngfile\.site$/i.test(u.hostname)}catch(e){return false}};
 const st=document.createElement("style");st.textContent=`.mf-hint{display:block;font-size:11.5px;margin:-4px 0 10px;line-height:1.6}
 .mf-ok{color:#4ade80}.mf-bad{color:#f87171}
 .mf-b{border-color:#ef4444!important;box-shadow:0 0 0 3px #ef444433!important}
@@ -11,12 +11,12 @@ function check(inp){
  if(!h||!h.classList||!h.classList.contains("mf-hint")){h=document.createElement("small");h.className="mf-hint";inp.after(h)}
  const v=inp.value.trim();
  if(!v){h.textContent="";inp.classList.remove("mf-b","mf-g");return}
- if(ok(v)){h.textContent="✅ رابط ميديا فاير مقبول";h.className="mf-hint mf-ok";inp.classList.add("mf-g");inp.classList.remove("mf-b")}
+ if(ok(v)){h.textContent=/(^|\.)vikingfile\.com$|(^|\.)vik1ngfile\.site$/i.test(new URL(v).hostname)?"✅ رابط VikingFile مقبول (يفتح بتاب جديد)":"✅ رابط ميديا فاير مقبول";h.className="mf-hint mf-ok";inp.classList.add("mf-g");inp.classList.remove("mf-b")}
  else{h.textContent=MSG;h.className="mf-hint mf-bad";inp.classList.add("mf-b");inp.classList.remove("mf-g")}
 }
 function scan(){
  const a=document.getElementById("mpDownload");
- if(a&&!a.dataset.mf){a.dataset.mf="1";a.placeholder="https://www.mediafire.com/file/....../file";a.addEventListener("input",()=>check(a))}
+ if(a&&!a.dataset.mf){a.dataset.mf="1";a.placeholder="https://www.mediafire.com/file/... أو https://vikingfile.com/f/...";a.addEventListener("input",()=>check(a))}
 }
 function fail(kind){
  if(kind==="mp"){

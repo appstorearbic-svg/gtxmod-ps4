@@ -115,7 +115,7 @@ export async function onRequestPost({request,env}){
   let downloadUrl;
   try{const parsed=new URL(download);if(!["http:","https:"].includes(parsed.protocol))throw new Error();downloadUrl=parsed.href;}
   catch(e){return bad("رابط التحميل غير صالح. استخدم رابط http أو https.",400);}
-  if(!/(^|\.)mediafire\.com$/i.test(new URL(downloadUrl).hostname))return bad("❌ خطأ: هذا ليس رابط ميديا فاير. النشر مسموح فقط بروابط MediaFire.",400);
+  if(!/(^|\.)mediafire\.com$|(^|\.)vikingfile\.com$|(^|\.)vik1ngfile\.site$/i.test(new URL(downloadUrl).hostname))return bad("❌ خطأ: النشر مسموح فقط بروابط MediaFire أو VikingFile.",400);
   if(thumb&&(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(thumb)||thumb.length>300000))return bad("صورة المعاينة غير صالحة.",400);
   let spawn=[];try{spawn=JSON.parse(String(f.get("spawn")||"[]"))}catch(e){}
   spawn=(Array.isArray(spawn)?spawn:[]).map(x=>String(x||"").trim().slice(0,24)).filter(Boolean).slice(0,15);
